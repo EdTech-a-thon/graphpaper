@@ -2,9 +2,10 @@
   // The whole tool: presets and collapsed settings on the left, the graph and
   // an icon toolbar on the right. On a wide screen the page itself never
   // scrolls; only the settings column does. Settings are mirrored into the
-  // page address so a bookmark brings back exactly this graph.
+  // page address so a bookmark brings back exactly this graph, and every
+  // change can be undone.
   import {
-    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, RotateCcw,
+    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, Redo2, Undo2,
   } from '@lucide/svelte'
   import Footer from './Footer.svelte'
   import Graph from './Graph.svelte'
@@ -12,7 +13,7 @@
   import Presets from './Presets.svelte'
   import Section from './Section.svelte'
   import { copyPng, downloadPng, downloadSvg } from './exporting.js'
-  import { DEFAULT_SETTINGS, MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
+  import { MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(new URLSearchParams(window.location.search)))
   const clean = $derived(cleanSettings(settings))
@@ -21,6 +22,59 @@
   $effect(() => {
     history.replaceState(null, '', query ? `/?${query}` : '/')
   })
+
+  // Undo/redo. A change is recorded once the settings have been still for a
+  // moment, so typing a label is one step rather than one per letter.
+  let past = $state.raw([])
+  let future = $state.raw([])
+  let current = $state.snapshot(clean)
+  let currentQuery = query
+  let recordTimer
+  function record() {
+    clearTimeout(recordTimer)
+    if (query === currentQuery) return
+    past = [...past, current]
+    future = []
+    current = $state.snapshot(clean)
+    currentQuery = query
+  }
+  $effect(() => {
+    query
+    clearTimeout(recordTimer)
+    recordTimer = setTimeout(record, 500)
+  })
+  function go(to) {
+    current = to
+    currentQuery = settingsToQuery(to)
+    settings = structuredClone(to)
+  }
+  function undo() {
+    record()
+    if (!past.length) return
+    future = [...future, current]
+    go(past.at(-1))
+    past = past.slice(0, -1)
+  }
+  function redo() {
+    record()
+    if (!future.length) return
+    past = [...past, current]
+    go(future.at(-1))
+    future = future.slice(0, -1)
+  }
+  const canUndo = $derived(past.length > 0 || query !== currentQuery)
+  const canRedo = $derived(future.length > 0)
+
+  function onkeydown(event) {
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) return
+    // Text boxes keep their own undo while you're typing in them.
+    if (event.target.matches?.('input[type=text], input[type=number], textarea')) return
+    const key = event.key.toLowerCase()
+    if (key === 'z' && !event.shiftKey) undo()
+    else if ((key === 'z' && event.shiftKey) || key === 'y') redo()
+    else return
+    event.preventDefault()
+  }
 
   const EVERY_OPTIONS = [
     [1, 'Every line'],
@@ -89,11 +143,9 @@
       flash('Copy the address bar to share this graph.')
     }
   }
-  function reset() {
-    settings = structuredClone(DEFAULT_SETTINGS)
-    flash('Back to the default graph.')
-  }
 </script>
+
+<svelte:window {onkeydown} />
 
 <div class="page no-print">
   <header class="intro">
@@ -149,7 +201,8 @@
     </div>
 
     <div class="preview">
-      <div class="toolbar card" role="toolbar" aria-label="Graph actions">
+      <div class="card canvas">
+      <div class="toolbar" role="toolbar" aria-label="Graph actions">
         <button class="icon-btn primary" aria-label="Print" data-tip="Print" onclick={() => window.print()}><Printer size={19} /></button>
         <span class="divider"></span>
         <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
@@ -157,11 +210,13 @@
         <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
         <button class="icon-btn" aria-label="Copy link" data-tip="Copy link" onclick={copyLink}><Link size={19} /></button>
         <span class="divider"></span>
-        <button class="icon-btn" aria-label="Start over" data-tip="Start over" onclick={reset}><RotateCcw size={19} /></button>
+        <button class="icon-btn" aria-label="Undo" data-tip="Undo" disabled={!canUndo} onclick={undo}><Undo2 size={19} /></button>
+        <button class="icon-btn" aria-label="Redo" data-tip="Redo" disabled={!canRedo} onclick={redo}><Redo2 size={19} /></button>
       </div>
-      <p class="status" aria-live="polite">{status}</p>
-      <div class="card sheet">
+      <div class="sheet">
         <Graph settings={clean} bind:svg />
+        <p class="status" class:shown={status} aria-live="polite">{status}</p>
+      </div>
       </div>
       <Footer />
     </div>
@@ -189,9 +244,13 @@
      scrolls on its own; the graph shrinks to fit beside it. */
   @media (min-width: 861px) and (min-height: 560px) {
     .page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-bottom: 0; }
-    .layout { flex: 1; min-height: 0; align-items: stretch; }
-    .controls { min-height: 0; overflow-y: auto; margin: 0 -0.75rem; padding: 0 0.75rem 1.25rem; }
+    .layout { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+    .controls {
+      min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+      margin: 0 -0.75rem; padding: 0 0.75rem 1.25rem;
+    }
     .preview { display: flex; flex-direction: column; min-height: 0; }
+    .canvas { flex: 1; min-height: 0; }
     .sheet { flex: 1; min-height: 0; }
     .sheet :global(svg) { width: 100%; height: 100%; }
   }
@@ -206,15 +265,22 @@
   .check { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; font-size: 0.95rem; cursor: pointer; }
   .check input { accent-color: var(--blue); width: 1rem; height: 1rem; }
 
-  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem; }
+  .canvas { display: flex; flex-direction: column; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem; border-bottom: 1px solid var(--border); }
   .divider { width: 1px; height: 1.6rem; background: var(--border); margin: 0 0.3rem; }
   @media (max-width: 480px) {
     .divider { display: none; }
     .toolbar { justify-content: space-between; gap: 0.15rem; padding: 0.35rem; }
     .toolbar :global(.icon-btn) { width: 2.15rem; height: 2.15rem; }
   }
-  .status { min-height: 1.3rem; margin: 0.45rem 0.25rem; color: var(--green); font-weight: 600; font-size: 0.88rem; }
-  .sheet { padding: 1rem; display: flex; justify-content: center; }
+  .sheet { position: relative; padding: 1rem; display: flex; justify-content: center; }
+  .status {
+    position: absolute; left: 50%; bottom: 0.9rem; transform: translate(-50%, 0.4rem);
+    max-width: calc(100% - 2rem); margin: 0; padding: 0.45rem 0.85rem; border-radius: 999px;
+    background: var(--ink); color: #fff; font-weight: 600; font-size: 0.86rem; text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+  }
+  .status.shown { opacity: 1; transform: translate(-50%, 0); }
   .sheet :global(svg) { max-height: 74vh; width: auto; max-width: 100%; }
   .preview :global(footer) { padding: 1rem 0 1.25rem; }
 
