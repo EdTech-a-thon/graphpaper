@@ -1,7 +1,9 @@
 <script>
   // Picks how one end of an axis finishes, like the line end caps in Figma: a
   // button showing the current cap that drops down a list of the others. The
-  // list is fixed-position so the scrolling settings column can't clip it.
+  // list is fixed-position so the scrolling settings column can't clip it, and
+  // opens upward when there isn't room below.
+  import { tick } from 'svelte'
   import { ChevronDown } from '@lucide/svelte'
   import { CAPS } from './settings.js'
 
@@ -14,11 +16,20 @@
   let menu = $state()
   let pos = $state({ left: 0, top: 0, width: 0 })
 
-  function show() {
+  const GAP = 4
+  const EDGE = 8 // keep this far from the window edges
+
+  async function show() {
     const r = trigger.getBoundingClientRect()
-    pos = { left: r.left, top: r.bottom + 4, width: r.width }
+    pos = { left: r.left, top: r.bottom + GAP, width: r.width }
     open = true
-    requestAnimationFrame(() => (menu?.querySelector('[aria-selected=true]') ?? menu?.querySelector('button'))?.focus())
+    await tick()
+    const h = menu.offsetHeight
+    const w = menu.offsetWidth
+    const fitsBelow = r.bottom + GAP + h <= window.innerHeight - EDGE
+    const top = fitsBelow || r.top - GAP - h < EDGE ? Math.min(r.bottom + GAP, window.innerHeight - EDGE - h) : r.top - GAP - h
+    pos = { ...pos, top: Math.max(EDGE, top), left: Math.max(EDGE, Math.min(r.left, window.innerWidth - EDGE - w)) }
+    ;(menu.querySelector('[aria-selected=true]') ?? menu.querySelector('button'))?.focus()
   }
   function hide(refocus = true) {
     open = false
