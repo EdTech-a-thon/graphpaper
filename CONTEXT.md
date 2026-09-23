@@ -68,6 +68,14 @@ _Avoid_: Line graph, ruler
 What the teacher types to graph on a number line, such as −2 < x ≤ 5 or x < −1 or x ≥ 3. A number line with no inequality is blank.
 _Avoid_: Solution set, interval, expression
 
+**Tick**:
+A short mark across a number line at every step of its range. Numbered ticks are drawn longer than the ticks between them.
+_Avoid_: Notch, hash mark, gridline
+
+**Inequality graph**:
+The thick line, arrows and endpoints drawn over a number line to show which numbers make its inequality true. A teacher can hide it to print the blank line with the same settings, as the question beside its answer key.
+_Avoid_: Shading, solution, plot
+
 **Endpoint**:
 Where an inequality's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
 _Avoid_: Dot, point, boundary
