@@ -138,8 +138,8 @@
         <div class="head-row">
           <h2 class="card-head flush">Equations</h2>
           <HelpTip id="equation-tip" label="How to type an equation">
-            Type a line like y = 2x + 1, y = −1/2x + 3, 2x + 3y = 6 or x = 4, or points like (2, 3) or (1, 2), (3, 4). Type / for
-            a fraction and pi for π.
+            Type a line like y = 2x + 1, 2x + 3y = 6 or x = 4, a curve like y = x^2 − 4 or y = −(x − 2)^2 + 3, or points like
+            (2, 3) or (1, 2), (3, 4). Type ^ for an exponent, / for a fraction and pi for π.
           </HelpTip>
         </div>
         {#each settings.equations as row, i}

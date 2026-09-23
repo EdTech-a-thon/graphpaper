@@ -13,6 +13,41 @@ const CHAR = FS * 0.6 // rough width of one digit
 const HEAD = 12 // length of an arrowhead where a graphed line leaves the grid
 const HEAD_HALF = 5.5 // half its width
 
+const round = (v) => Math.round(v * 100) / 100
+const pathLength = (pts) => pts.reduce((sum, p, k) => (k ? sum + Math.hypot(p.x - pts[k - 1].x, p.y - pts[k - 1].y) : 0), 0)
+
+/**
+ * An arrowhead at the last point of a path, pointing along it, and the path
+ * cut back to the arrowhead's base so the line doesn't poke through its tip.
+ */
+function arrowAt(pts, heads) {
+  const tip = pts.at(-1)
+  // Walk back one arrowhead's length along the path to find the base.
+  let k = pts.length - 1
+  let left = HEAD
+  let base = tip
+  while (k > 0) {
+    const a = pts[k - 1]
+    const b = pts[k]
+    const seg = Math.hypot(b.x - a.x, b.y - a.y)
+    if (seg >= left) {
+      const t = left / seg
+      base = { x: b.x + (a.x - b.x) * t, y: b.y + (a.y - b.y) * t }
+      break
+    }
+    left -= seg
+    k--
+  }
+  const len = Math.hypot(tip.x - base.x, tip.y - base.y) || 1
+  const u = { x: (tip.x - base.x) / len, y: (tip.y - base.y) / len }
+  heads.push(
+    `M${round(tip.x)},${round(tip.y)} L${round(base.x - u.y * HEAD_HALF)},${round(base.y + u.x * HEAD_HALF)} L${round(base.x + u.y * HEAD_HALF)},${round(base.y - u.x * HEAD_HALF)} z`,
+  )
+  // Stop the line just inside the arrowhead's base, so they overlap a little.
+  const inset = { x: base.x + u.x * 1, y: base.y + u.y * 1 }
+  return { pts: [...pts.slice(0, k), inset] }
+}
+
 function ticks(blocks, step, start, every, numbering) {
   // Count from the line at 0 when there is one, so "every 5" gives 0, 5, 10…
   const zero = -start / step
@@ -125,8 +160,8 @@ export function buildGraph(settings) {
   if (yTitle) labels.push({ x: ySideX, y: midY, text: yTitle, kind: 'side', rotate: true })
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
-  // What the teacher graphed: lines run edge to edge, with an arrowhead where
-  // they leave the grid at the ends the teacher picked; points are dots.
+  // What the teacher graphed: each line or curve runs to the grid's edge, with
+  // an arrowhead where it leaves at the ends the teacher picked; points are dots.
   const px = ({ x, y }) => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
   const box = { x0, x1, y0, y1 }
   const lines = []
@@ -135,25 +170,21 @@ export function buildGraph(settings) {
   readEquations(rows.map((r) => r.text), box).forEach((read, i) => {
     const { color, line: style, arrows } = rows[i]
     const ink = COLORS[color]
-    if (read?.ends) {
-      // p is the left end (the bottom, for an up-and-down line), q the right.
-      const [a, b] = read.ends
-      const leftFirst = Math.abs(a.x - b.x) > 1e-9 ? a.x < b.x : a.y < b.y
-      const [p, q] = (leftFirst ? [a, b] : [b, a]).map(px)
-      const len = Math.hypot(q.x - p.x, q.y - p.y)
-      const u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len }
-      const head = (tip, dir) => {
-        const base = { x: tip.x - dir * u.x * HEAD, y: tip.y - dir * u.y * HEAD }
-        return `M${tip.x},${tip.y} L${base.x - u.y * HEAD_HALF},${base.y + u.x * HEAD_HALF} L${base.x + u.y * HEAD_HALF},${base.y - u.x * HEAD_HALF} z`
+    for (const run of read?.runs ?? []) {
+      let pts = run.points.map(px)
+      const heads = []
+      // Arrows go on ends that leave the grid, if the teacher wants that end.
+      const want = [arrows === 'both' || arrows === 'left', arrows === 'both' || arrows === 'right']
+      if (pathLength(pts) > HEAD * 2.5) {
+        if (want[1] && run.edges[1]) ({ pts } = arrowAt(pts, heads))
+        if (want[0] && run.edges[0]) {
+          const r = arrowAt([...pts].reverse(), heads)
+          pts = r.pts.reverse()
+        }
       }
-      const fits = len > HEAD * 2
-      const atLeft = fits && (arrows === 'both' || arrows === 'left')
-      const atRight = fits && (arrows === 'both' || arrows === 'right')
-      const inset = HEAD - 1
       lines.push({
-        x1: p.x + (atLeft ? u.x * inset : 0), y1: p.y + (atLeft ? u.y * inset : 0),
-        x2: q.x - (atRight ? u.x * inset : 0), y2: q.y - (atRight ? u.y * inset : 0),
-        heads: [atLeft && head(p, -1), atRight && head(q, 1)].filter(Boolean),
+        d: pts.map((p, k) => `${k ? 'L' : 'M'}${round(p.x)},${round(p.y)}`).join(''),
+        heads,
         color: ink,
         dash: style === 'dashed' ? '9 6' : style === 'dotted' ? '0.01 6' : undefined,
         cap: style === 'dotted' ? 'round' : 'butt',

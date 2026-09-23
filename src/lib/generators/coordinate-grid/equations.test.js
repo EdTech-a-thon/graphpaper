@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { ROW_DEFAULTS, clipLine, parseEquation, readEquations, rowFromParam } from './equations.js'
+import { ROW_DEFAULTS, clipLine, curveRuns, parseEquation, readEquations, rowFromParam } from './equations.js'
 import { DEFAULT_SETTINGS, cleanSettings, settingsFromParams, settingsToQuery } from './settings.js'
 
 const line = (text) => {
@@ -31,8 +31,9 @@ describe('parseEquation', () => {
   })
 
   test.each([
-    ['y = x^2', 'Exponents aren’t here yet'],
-    ['y = x*x', 'Only straight lines'],
+    ['y^2 = x', 'Sideways curves and circles'],
+    ['x^2 + y^2 = 9', 'Sideways curves and circles'],
+    ['x^2 = 4', 'An equation in x alone'],
     ['y > 2x', 'Shading inequalities'],
     ['1 < y < 3', 'Use one = sign'],
     ['y = 2t', 'Use x and y, not t'],
@@ -47,6 +48,20 @@ describe('parseEquation', () => {
   })
 
   test('blank is nothing', () => expect(parseEquation('  ')).toBeNull())
+
+  test.each([
+    ['y = x^2', [[0, 0], [3, 9], [-2, 4]]],
+    ['y = x*x', [[3, 9]]],
+    ['y = -(x - 2)^2 + 3', [[2, 3], [0, -1]]],
+    ['y - 3 = (x - 1)^2', [[1, 3], [3, 7]]],
+    ['2y = x^2 - 4', [[0, -2], [4, 6]]],
+    ['y = 2^x', [[0, 1], [3, 8], [-1, 0.5]]],
+    ['y = 1/2x^2', [[2, 2]]],
+    ['y = x^3 - x', [[2, 6]]],
+  ])('%s is a curve', (text, points) => {
+    const { curve } = parseEquation(text)
+    for (const [x, y] of points) expect(curve(x)).toBeCloseTo(y, 9)
+  })
 })
 
 const box = { x0: -5, x1: 5, y0: -5, y1: 5 }
@@ -68,7 +83,30 @@ describe('clipLine', () => {
   })
 })
 
+describe('curveRuns', () => {
+  test('a parabola comes in and goes out the top, with arrows at both ends', () => {
+    const runs = curveRuns(parseEquation('y = x^2 - 4').curve, box)
+    expect(runs).toHaveLength(1)
+    const [run] = runs
+    expect(run.edges).toEqual([true, true])
+    expect(run.points[0].y).toBeCloseTo(5, 9)
+    expect(run.points.at(-1).y).toBeCloseTo(5, 9)
+    expect(run.points[0].x).toBeCloseTo(-3, 3)
+    expect(run.points.at(-1).x).toBeCloseTo(3, 3)
+  })
+  test('a curve that stops inside the grid has no arrow there', () => {
+    const [run] = curveRuns(parseEquation('y = x^(1/2)').curve, box)
+    expect(run.edges).toEqual([false, true])
+  })
+  test('a curve that leaves and comes back is two runs', () => {
+    expect(curveRuns(parseEquation('y = x^3 - 9x').curve, { x0: -4, x1: 4, y0: -5, y1: 5 }).length).toBeGreaterThan(1)
+  })
+})
+
 describe('readEquations', () => {
+  test('a curve off the grid says so', () => {
+    expect(readEquations(['y = x^2 + 20'], box)[0].problem).toMatch(/misses the grid/)
+  })
   test('points off the grid are left out and named', () => {
     const [row] = readEquations(['(1, 1), (9, 2)'], box)
     expect(row.points).toEqual([{ x: 1, y: 1 }])

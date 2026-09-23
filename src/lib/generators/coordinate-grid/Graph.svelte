@@ -53,7 +53,7 @@
   </g>
 
   {#each g.lines as l}
-    <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} stroke-width={l.width} stroke-dasharray={l.dash} stroke-linecap={l.cap} />
+    <path d={l.d} fill="none" stroke={l.color} stroke-width={l.width} stroke-dasharray={l.dash} stroke-linecap={l.cap} stroke-linejoin="round" />
     {#each l.heads as d}<path {d} fill={l.color} />{/each}
   {/each}
   {#each g.dots as d}<circle cx={d.x} cy={d.y} r="4.5" fill={d.color} />{/each}

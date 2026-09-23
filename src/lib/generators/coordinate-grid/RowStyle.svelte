@@ -159,9 +159,10 @@
 
 <style>
   /* Outlined, so it reads as its own control, apart from the plain × at the row's end. */
-  /* As tall as the math field beside it, and square. */
+  /* As tall as the math field beside it (square on one line), always as wide, so
+     the fields line up down the list even when one holds a stacked fraction. */
   .row-style { display: flex; align-self: stretch; }
-  .outline { width: auto; height: auto; aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; }
+  .outline { width: 2.86rem; height: auto; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; }
   .outline:hover:not(:disabled), .outline[aria-expanded='true'] { border-color: var(--blue-border); background: var(--blue-soft); }
   .panel {
     position: fixed;

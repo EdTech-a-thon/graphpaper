@@ -65,7 +65,7 @@ A figure of one horizontal axis with evenly spaced ticks, for placing numbers an
 _Avoid_: Line graph, ruler
 
 **Equation**:
-What the teacher types to graph, one per row. On a number line it's an inequality or equation in one letter, such as −2 < x ≤ 5, x < −1 or x ≥ 3, or x = 2; a number line with no equation is blank. On a coordinate grid it's a straight line, such as y = 2x + 1, 2x + 3y = 6 or x = 4, or a list of points, such as (1, 2), (3, 4). Points aren't equations, but they're typed in the same rows and called the same thing. (The number line's code and page address still call its equation `inequality`; the grid's rows are `eq`.)
+What the teacher types to graph, one per row. On a number line it's an inequality or equation in one letter, such as −2 < x ≤ 5, x < −1 or x ≥ 3, or x = 2; a number line with no equation is blank. On a coordinate grid it's a line or curve that can be written as y = …, such as y = 2x + 1, 2x + 3y = 6, x = 4 or y = x² − 4, or a list of points, such as (1, 2), (3, 4). Points aren't equations, but they're typed in the same rows and called the same thing. (The number line's code and page address still call its equation `inequality`; the grid's rows are `eq`.)
 _Avoid_: Solution set, interval, expression
 
 **Tick**:
@@ -77,7 +77,7 @@ The thick line, arrows and endpoints drawn over a number line to show which numb
 _Avoid_: Shading, solution, plot
 
 **Graphed line**:
-A line drawn across a coordinate grid from an equation, running edge to edge with an arrowhead where it leaves the grid. Only straight lines for now: no curves and no shaded inequalities.
+A straight line or curve drawn across a coordinate grid from an equation, with an arrowhead where it leaves the grid. A curve is anything that can be solved for y, such as a parabola or 2^x; sideways curves, circles and shaded inequalities aren't drawn yet.
 _Avoid_: Plot, function, curve
 
 **Row style**:
