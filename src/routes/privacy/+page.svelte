@@ -1,24 +1,30 @@
+<script>
+  import Seo from '$lib/site/Seo.svelte'
+</script>
+
+<Seo title="Privacy" description="What Math Figures collects, what it doesn't, and why." path="/privacy" />
+
 <div class="page">
-  <a class="back" href="/">← Back</a>
+  <a class="back" href="/">← All figures</a>
   <h1>Privacy</h1>
   <p class="sub">What we collect, what we don't, and why.</p>
 
   <section class="card">
     <p>
-      Graph Paper Maker does not collect personal information from visitors or students.
+      Math Figures does not collect personal information from visitors or students.
       We use Cloudflare Web Analytics to anonymously count the number of visits, which helps us
-      understand how the tool is being used in classrooms. Cloudflare Web Analytics is cookieless,
+      understand how the generators are being used in classrooms. Cloudflare Web Analytics is cookieless,
       does not fingerprint visitors, and does not track users across other sites; see Cloudflare's
       <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">privacy policy</a>
       for details. We do not share, sell, or otherwise transfer any visitor data to third parties.
     </p>
     <p>
-      Your graph's settings live entirely in the page address, and every graph is drawn in your
-      browser — nothing you type is saved or sent anywhere.
+      A figure's settings live entirely in the page address, so a link opens the same figure. Saved
+      presets stay in your browser. Nothing you type is stored on our servers.
     </p>
     <p>
       Questions or concerns? Email
-      <a href="mailto:directors@teacher.dev?subject=graphpaper%20privacy">directors@teacher.dev</a>.
+      <a href="mailto:directors@teacher.dev?subject=Math%20Figures%20privacy">directors@teacher.dev</a>.
     </p>
   </section>
 </div>

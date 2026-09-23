@@ -1,14 +1,16 @@
 <script>
-  // Built-in and saved starting points. The one matching the current graph is
-  // highlighted; saved ones can be deleted, after a confirmation.
+  // A generator's built-in and saved starting points. The one matching the
+  // current figure is highlighted; saved ones can be deleted, after a
+  // confirmation. `same(a, b)` says whether two settings draw the same figure.
+  import { onMount } from 'svelte'
   import { BookmarkPlus, Check, X } from '@lucide/svelte'
   import Modal from './Modal.svelte'
-  import { BUILT_IN_PRESETS, deletePreset, loadPresets, savePreset } from './presets.js'
-  import { sameGraph } from './settings.js'
 
-  let { settings, onapply } = $props()
+  let { builtIns, store, same, settings, onapply } = $props()
 
-  let saved = $state(loadPresets())
+  // Saved presets live in this browser, so they load after the page arrives.
+  let saved = $state([])
+  onMount(() => (saved = store.load()))
   let naming = $state(false)
   let name = $state('')
   let nameInput = $state()
@@ -23,11 +25,11 @@
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    saved = savePreset(saved, trimmed, settings)
+    saved = store.save(saved, trimmed, settings)
     naming = false
   }
   function confirmDelete() {
-    saved = deletePreset(saved, deleting)
+    saved = store.remove(saved, deleting)
     deleting = null
   }
   function onkeydown(event) {
@@ -37,11 +39,11 @@
 
 <div class="presets">
   <div class="chips">
-    {#each BUILT_IN_PRESETS as p}
-      <button class="chip" class:on={sameGraph(p.settings, settings)} onclick={() => onapply(p.settings)}>{p.name}</button>
+    {#each builtIns as p}
+      <button class="chip" class:on={same(p.settings, settings)} onclick={() => onapply(p.settings)}>{p.name}</button>
     {/each}
     {#each saved as p (p.name)}
-      <span class="chip saved" class:on={sameGraph(p.settings, settings)}>
+      <span class="chip saved" class:on={same(p.settings, settings)}>
         <button class="apply" onclick={() => onapply(p.settings)}>{p.name}</button>
         <button
           class="remove"

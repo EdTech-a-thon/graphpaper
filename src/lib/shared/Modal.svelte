@@ -45,13 +45,13 @@
   role="presentation"
   onmousedown={(event) => { if (event.target === event.currentTarget) onclose() }}
 >
-  <section bind:this={dialog} class="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+  <div bind:this={dialog} class="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
     <header>
       <h2 id={titleId}>{title}</h2>
       <button type="button" class="close" aria-label="Close" onclick={onclose}><X aria-hidden="true" /></button>
     </header>
     {@render children()}
-  </section>
+  </div>
 </div>
 
 <style>

@@ -1,43 +1,51 @@
-# Graph Paper Maker
+# Math Figures
 
-A small web app for teachers to make printable coordinate grids. Everything
-runs in the browser, and the settings are saved in the page address, so a
-bookmarked or shared link opens the same graph.
+Generators for clean, printable math figures that teachers paste into tests,
+worksheets and slides. Live at **https://mathfigures.com**, a teacher.dev
+project. See `CONTEXT.md` for the vocabulary (figure, generator, directory…)
+and `docs/adr/` for decisions.
 
-Live at **https://graphpaper.teacher.dev**.
+## Pages
 
-## What you can control
+- `/` **Directory**: every generator as a card with a live preview, plus a
+  card to request one we don't make yet.
+- `/coordinate-grid` **Coordinate Grid Generator**: blocks, scale, numbering,
+  chart and axis titles (text or a blank line for students), axis labels, and
+  a Figma-style end cap for each end of each axis. Presets, undo/redo, copy
+  image, PNG/SVG download and copy link.
+- `/about`, `/privacy`, `/sitemap.xml`, `/robots.txt`
 
-Every group of settings starts collapsed and shows a one-line summary, so the
-whole setup can be read at a glance. Open one to change it.
+Every page has the top bar: the site name, the current generator, and a search
+box that lists the generators and ends with **Request a generator**. The help
+button in the corner opens the same kind of email dialog.
 
-- **Presets**: *First quadrant* and *All four quadrants* are built in. Save the
-  current graph as a named preset, apply it later, or delete it. Saved presets
-  are kept in this browser's localStorage.
-- **x-axis / y-axis**, each set separately:
-  - **Blocks** (e.g. 10 across, 20 up)
-  - **Start at**, the value of the first line (e.g. −10 for four quadrants)
-  - **Count by**, the scale (e.g. 1s across, 5s up)
-  - **Numbers**: every line, every 2nd, 5th or 10th line, or none
-  - **Label**: text, a blank line for students to write on, or none. Short
-    labels (`x`, `y`) go at the arrow tip, and longer ones run along the side.
-- **Title**: text, a blank line for students, or none
-- **Style**: arrows on the axes, and black or light gray grid lines
+A generator's settings live in the page address, so a link opens the same
+figure, and the server renders that figure on first load (see ADR 0001).
+Saved presets stay in the browser's localStorage.
 
-## Getting it out
+## Code layout
 
-The icon toolbar above the graph has **Print** (1, 2 or 4 graphs per page),
-**Copy image** (paste into Docs or Slides), **Download PNG**, **Download SVG**,
-**Copy link** and **Start over**. The help button in the bottom-left corner has
-the support email.
+```
+src/routes/            SvelteKit pages
+src/lib/site/          top bar, search, directory dialogs, Help, footer, SEO
+src/lib/shared/        pieces every generator uses: figure card and toolbar,
+                       undo history, presets, dialogs, fields, end-cap picker
+src/lib/generators/    index.js lists every generator; one folder each
+```
+
+To add a generator: make a folder under `src/lib/generators/` with its
+builder and preview, add one entry to `generators/index.js`, and add its route
+under `src/routes/`. The directory, search and sitemap pick it up from the list.
 
 ## Development
 
 ```bash
 npm install
 npm run dev
+npm run check   # svelte-check
 npm run build
 ```
 
-The Cloudflare Web Analytics token is read from `VITE_CF_BEACON_TOKEN`, which
-is set only in Vercel's production environment.
+Deployed on Vercel with `@sveltejs/adapter-vercel`. The Cloudflare Web
+Analytics token is read from `VITE_CF_BEACON_TOKEN`, which is set only in
+Vercel's production environment.

@@ -1,10 +1,8 @@
 <script>
-  // The one way to reach a person: a question mark in the corner that opens a
-  // short dialog, like the other teacher.dev tools.
+  // A question mark in the corner that opens a short dialog, like the other
+  // teacher.dev tools. It looks just like Request a generator.
   import { CircleQuestionMark } from '@lucide/svelte'
-  import Modal from './Modal.svelte'
-
-  const SUPPORT_EMAIL = 'support@teacher.dev'
+  import EmailDialog from './EmailDialog.svelte'
 
   let open = $state(false)
 </script>
@@ -20,12 +18,10 @@
 </button>
 
 {#if open}
-  <Modal title="Need a hand?" onclose={() => (open = false)}>
-    <p>
-      If you’re running into trouble or have suggestions, email us at
-      <a href="mailto:{SUPPORT_EMAIL}?subject=Graph%20Paper%20Maker">{SUPPORT_EMAIL}</a>.
-    </p>
-  </Modal>
+  <EmailDialog title="Need a hand?" subject="Math Figures" onclose={() => (open = false)}>
+    <p>If you’re running into trouble or have suggestions, email us and we’ll help.</p>
+    <p>Want a figure we don’t make yet? Email us to request a generator, and we’ll build it.</p>
+  </EmailDialog>
 {/if}
 
 <style>
@@ -47,5 +43,4 @@
   }
   .help-button :global(svg) { width: 22px; height: 22px; }
   .help-button:hover, .help-button:focus-visible { color: var(--blue-dark); background: var(--blue-soft); }
-  a { color: var(--blue-dark); font-weight: 600; text-underline-offset: 4px; }
 </style>

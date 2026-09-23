@@ -1,7 +1,13 @@
+<script>
+  import Seo from '$lib/site/Seo.svelte'
+</script>
+
+<Seo title="About" description="Math Figures is a free set of generators for printable math figures, from teacher.dev." path="/about" />
+
 <div class="page">
-  <a class="back" href="/">← Back</a>
+  <a class="back" href="/">← All figures</a>
   <h1>About</h1>
-  <p class="sub">Printable coordinate grids, made to fit your lesson.</p>
+  <p class="sub">Clean math figures, made to fit your lesson.</p>
 
   <section class="card">
     <div class="titlerow">
@@ -9,7 +15,8 @@
       <h2>From teacher.dev</h2>
     </div>
     <p>
-      Graph Paper Maker is a project from
+      Math Figures is a set of generators for the figures teachers put in tests and worksheets,
+      like coordinate grids. It's a project from
       <a href="https://teacher.dev" target="_blank" rel="noopener noreferrer">teacher.dev</a>,
       a team building apps for teachers that solve real problems. Learn more about who we are
       and what else we're building at
@@ -33,10 +40,10 @@
   <section class="card">
     <h2>Feedback &amp; ideas</h2>
     <p>
-      We'd love to hear from you. Tell us what's working, what's not, or pitch us an idea for a
-      tool you wish existed. We're here to help.
+      We'd love to hear from you. Tell us what's working, what's not, or which figure you wish we
+      made. We're here to help.
     </p>
-    <a class="btn-dark" href="mailto:directors@teacher.dev?subject=graphpaper%20feedback">Email directors@teacher.dev</a>
+    <a class="btn-dark" href="mailto:directors@teacher.dev?subject=Math%20Figures%20feedback">Email directors@teacher.dev</a>
   </section>
 </div>
 

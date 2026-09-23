@@ -5,9 +5,9 @@
   // opens upward when there isn't room below.
   import { tick } from 'svelte'
   import { ChevronDown } from '@lucide/svelte'
-  import { CAPS } from './settings.js'
 
-  let { value = $bindable(), label, direction } = $props()
+  // options: { cap id: display name }, e.g. { triangle: 'Triangle arrow', none: 'None' }
+  let { value = $bindable(), options, label, direction } = $props()
 
   const ANGLE = { right: 0, up: -90, left: 180, down: 90 }
   let open = $state(false)
@@ -73,11 +73,11 @@
     class="trigger"
     aria-haspopup="listbox"
     aria-expanded={open}
-    aria-label="{label}: {CAPS[value]}"
+    aria-label="{label}: {options[value]}"
     onclick={() => (open ? hide() : show())}
   >
     {@render capIcon(value)}
-    <span class="name">{CAPS[value]}</span>
+    <span class="name">{options[value]}</span>
     <ChevronDown size={15} aria-hidden="true" />
   </button>
   {#if open}
@@ -90,7 +90,7 @@
       style="left: {pos.left}px; top: {pos.top}px; min-width: {pos.width}px"
       onkeydown={onmenukey}
     >
-      {#each Object.entries(CAPS) as [v, name]}
+      {#each Object.entries(options) as [v, name]}
         <button type="button" role="option" aria-selected={value === v} class:on={value === v} onclick={() => pick(v)}>
           {@render capIcon(v)}
           {name}
