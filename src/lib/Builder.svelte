@@ -1,12 +1,16 @@
 <script>
-  // The whole tool: choose settings on the left, see the graph on the right,
-  // then print it or save it as a picture. Settings are mirrored into the page
-  // address so a teacher can bookmark a favourite layout.
-  import Graph from './Graph.svelte'
-  import { copyPng, downloadPng, downloadSvg } from './exporting.js'
+  // The whole tool: presets and collapsed settings on the left, the graph and
+  // an icon toolbar on the right. Settings are mirrored into the page address
+  // so a bookmark brings back exactly this graph.
   import {
-    DEFAULT_SETTINGS, MAX_BLOCKS, axisStart, cleanSettings, fmt, parsePoints, settingsFromParams, settingsToQuery,
-  } from './settings.js'
+    Copy, FileCode, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, RotateCcw,
+  } from '@lucide/svelte'
+  import Graph from './Graph.svelte'
+  import LabelField from './LabelField.svelte'
+  import Presets from './Presets.svelte'
+  import Section from './Section.svelte'
+  import { copyPng, downloadPng, downloadSvg } from './exporting.js'
+  import { DEFAULT_SETTINGS, MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(new URLSearchParams(window.location.search)))
   const clean = $derived(cleanSettings(settings))
@@ -16,14 +20,6 @@
     history.replaceState(null, '', query ? `/?${query}` : '/')
   })
 
-  const range = (axis) => {
-    const blocks = clean[`${axis}Blocks`]
-    const step = clean[`${axis}Step`]
-    const start = axisStart(blocks, step, clean.layout, clean[`${axis}Start`])
-    return `${fmt(start)} to ${fmt(start + blocks * step)}`
-  }
-  const pointCount = $derived(parsePoints(clean.points).length)
-
   const EVERY_OPTIONS = [
     [1, 'Every line'],
     [2, 'Every 2nd line'],
@@ -31,45 +27,69 @@
     [10, 'Every 10th line'],
     [0, 'No numbers'],
   ]
-  const LAYOUTS = [
-    ['q1', 'First quadrant'],
-    ['four', 'All four quadrants'],
-    ['custom', 'Choose start values'],
+  const AXES = [
+    { axis: 'x', title: 'x-axis', icon: MoveRight },
+    { axis: 'y', title: 'y-axis', icon: MoveUp },
   ]
-  const STYLES = [
-    ['dots', 'Dots'],
-    ['both', 'Dots joined by lines'],
-    ['line', 'Line only'],
-  ]
+
+  function labelSummary(mode, text) {
+    if (mode === 'blank') return 'blank line'
+    if (mode === 'none' || !text.trim()) return 'no label'
+    return `“${text.trim()}”`
+  }
+  function axisSummary(axis) {
+    const blocks = clean[`${axis}Blocks`]
+    const step = clean[`${axis}Step`]
+    const start = clean[`${axis}Start`]
+    const every = clean[`${axis}Every`]
+    return [
+      `${fmt(start)} to ${fmt(start + blocks * step)}`,
+      `by ${fmt(step)}s`,
+      every ? (every === 1 ? 'numbered' : `numbered every ${every}`) : 'unnumbered',
+      labelSummary(clean[`${axis}LabelMode`], clean[`${axis}Label`]),
+    ].join(' · ')
+  }
+  const titleSummary = $derived(
+    clean.titleMode === 'blank' ? 'Blank line for students' : clean.titleMode === 'text' && clean.title.trim() ? `“${clean.title.trim()}”` : 'None',
+  )
+  const styleSummary = $derived(`${clean.arrows ? 'Arrows' : 'No arrows'} · ${clean.light ? 'light gray' : 'black'} grid lines`)
+
+  function applyPreset(preset) {
+    settings = { ...$state.snapshot(preset), copies: settings.copies }
+  }
 
   let svg = $state()
   let status = $state('')
+  let statusTimer
   function flash(msg) {
     status = msg
-    setTimeout(() => (status = ''), 1800)
+    clearTimeout(statusTimer)
+    statusTimer = setTimeout(() => (status = ''), 2200)
   }
   const filename = $derived(
-    (clean.title.trim() || 'graph').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'graph',
+    (clean.titleMode === 'text' && clean.title.trim() ? clean.title.trim() : 'graph')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'graph',
   )
 
   async function copyImage() {
     try {
       await copyPng(svg)
-      flash('Copied! Paste it into your document.')
+      flash('Image copied. Paste it into your document.')
     } catch {
-      flash('Your browser blocked copying — try Download PNG.')
+      flash('Your browser blocked copying. Try downloading a PNG instead.')
     }
   }
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      flash('Link copied.')
+      flash('Link copied. It opens this exact graph.')
     } catch {
       flash('Copy the address bar to share this graph.')
     }
   }
   function reset() {
     settings = structuredClone(DEFAULT_SETTINGS)
+    flash('Back to the default graph.')
   }
 </script>
 
@@ -79,116 +99,74 @@
       <img src="/favicon.svg" alt="" width="40" height="40" />
       <h1>Graph Paper Maker</h1>
     </div>
-    <p>Build a coordinate grid for your class, then print it or paste it into a worksheet.</p>
+    <p>Make a coordinate grid for your class, then print it or paste it into a worksheet.</p>
   </header>
 
   <div class="layout">
     <div class="controls">
       <section class="card">
-        <h2>Grid</h2>
-        <div class="chips" role="group" aria-label="Layout">
-          {#each LAYOUTS as [value, label]}
-            <button class="chip" class:on={settings.layout === value} onclick={() => (settings.layout = value)}>{label}</button>
-          {/each}
-        </div>
-
-        <div class="axes">
-          <span></span>
-          <span class="axis-head">x-axis <small>(across)</small></span>
-          <span class="axis-head">y-axis <small>(up)</small></span>
-
-          <label for="xBlocks">Blocks</label>
-          <input id="xBlocks" type="number" min="1" max={MAX_BLOCKS} bind:value={settings.xBlocks} />
-          <input aria-label="y-axis blocks" type="number" min="1" max={MAX_BLOCKS} bind:value={settings.yBlocks} />
-
-          <label for="xStep">Count by</label>
-          <input id="xStep" type="number" min="0" step="any" bind:value={settings.xStep} />
-          <input aria-label="y-axis count by" type="number" min="0" step="any" bind:value={settings.yStep} />
-
-          {#if settings.layout === 'custom'}
-            <label for="xStart">Starts at</label>
-            <input id="xStart" type="number" step="any" bind:value={settings.xStart} />
-            <input aria-label="y-axis starts at" type="number" step="any" bind:value={settings.yStart} />
-          {/if}
-
-          <label for="xEvery">Numbers</label>
-          <select id="xEvery" bind:value={settings.xEvery}>
-            {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
-          </select>
-          <select aria-label="y-axis numbers" bind:value={settings.yEvery}>
-            {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
-          </select>
-
-          <span></span>
-          <span class="range">{range('x')}</span>
-          <span class="range">{range('y')}</span>
-        </div>
-
-        <label class="check"><input type="checkbox" bind:checked={settings.arrows} /> Arrows on the axes</label>
-        <label class="check"><input type="checkbox" bind:checked={settings.light} /> Light gray grid lines</label>
+        <h2 class="card-head">Presets</h2>
+        <Presets settings={clean} onapply={applyPreset} />
       </section>
 
-      <section class="card">
-        <h2>Title &amp; labels</h2>
-        <label class="field">Title <input type="text" placeholder="(none)" bind:value={settings.title} /></label>
-        <div class="two">
-          <label class="field">x-axis label <input type="text" placeholder="(none)" bind:value={settings.xLabel} /></label>
-          <label class="field">y-axis label <input type="text" placeholder="(none)" bind:value={settings.yLabel} /></label>
-        </div>
-        <p class="hint">A short label like <i>x</i> goes at the arrow; a longer one like “Time (hours)” runs along the side.</p>
-        <label class="check">
-          <input type="checkbox" bind:checked={settings.blanks} />
-          Leave blank lines for students to write any empty title or label
-        </label>
-      </section>
+      <section class="card sections">
+        {#each AXES as { axis, title, icon }}
+          <Section {title} {icon} summary={axisSummary(axis)}>
+            <div class="grid-fields">
+              <label>Blocks <input type="number" min="1" max={MAX_BLOCKS} bind:value={settings[`${axis}Blocks`]} /></label>
+              <label>Start at <input type="number" step="any" bind:value={settings[`${axis}Start`]} /></label>
+              <label>Count by <input type="number" min="0" step="any" bind:value={settings[`${axis}Step`]} /></label>
+            </div>
+            <label class="field">
+              Numbers
+              <select bind:value={settings[`${axis}Every`]}>
+                {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
+              </select>
+            </label>
+            <div class="field">
+              <span>Label</span>
+              <LabelField
+                name="{title} label"
+                placeholder={axis === 'x' ? 'x or Time (hours)' : 'y or Distance (km)'}
+                bind:mode={settings[`${axis}LabelMode`]}
+                bind:text={settings[`${axis}Label`]}
+              />
+            </div>
+          </Section>
+        {/each}
 
-      <section class="card">
-        <h2>Data <small>(optional)</small></h2>
-        <label class="field">
-          Points
-          <textarea rows="2" placeholder="(1, 2)  (3, 5)  (6, 4)" bind:value={settings.points}></textarea>
-        </label>
-        {#if pointCount}
-          <p class="hint">{pointCount} point{pointCount === 1 ? '' : 's'}</p>
-          <div class="chips" role="group" aria-label="Point style">
-            {#each STYLES as [value, label]}
-              <button class="chip" class:on={settings.style === value} onclick={() => (settings.style = value)}>{label}</button>
-            {/each}
-          </div>
-        {/if}
-        <label class="check"><input type="checkbox" bind:checked={settings.lineOn} /> Draw the line</label>
-        {#if settings.lineOn}
-          <div class="equation">
-            <i>y</i> =
-            <input aria-label="slope m" type="number" step="any" bind:value={settings.m} />
-            <i>x</i> +
-            <input aria-label="intercept b" type="number" step="any" bind:value={settings.b} />
-          </div>
-        {/if}
-      </section>
+        <Section title="Title" icon={Heading} summary={titleSummary}>
+          <LabelField name="Title" placeholder="Graph title" bind:mode={settings.titleMode} bind:text={settings.title} />
+        </Section>
 
-      <button class="btn-ghost reset" onclick={reset}>Start over</button>
+        <Section title="Style" icon={Palette} summary={styleSummary}>
+          <label class="check"><input type="checkbox" bind:checked={settings.arrows} /> Arrows on the axes</label>
+          <label class="check"><input type="checkbox" bind:checked={settings.light} /> Light gray grid lines</label>
+        </Section>
+      </section>
     </div>
 
     <div class="preview">
+      <div class="toolbar card" role="toolbar" aria-label="Graph actions">
+        <button class="icon-btn primary" aria-label="Print" data-tip="Print" onclick={() => window.print()}><Printer size={19} /></button>
+        <div class="per-page" role="radiogroup" aria-label="Graphs per printed page" data-tip="Graphs per page">
+          {#each [1, 2, 4] as n}
+            <button role="radio" aria-checked={settings.copies === n} class:on={settings.copies === n} onclick={() => (settings.copies = n)}>{n}</button>
+          {/each}
+          <span class="per-page-label">per page</span>
+        </div>
+        <span class="divider"></span>
+        <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
+        <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
+        <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileCode size={19} /></button>
+        <button class="icon-btn" aria-label="Copy link" data-tip="Copy link" onclick={copyLink}><Link size={19} /></button>
+        <span class="divider"></span>
+        <button class="icon-btn" aria-label="Start over" data-tip="Start over" onclick={reset}><RotateCcw size={19} /></button>
+      </div>
+      <p class="status" aria-live="polite">{status}</p>
       <div class="card sheet">
         <Graph settings={clean} bind:svg />
       </div>
-      <div class="actions">
-        <button class="btn-primary" onclick={() => window.print()}>Print</button>
-        <label class="copies">
-          <select bind:value={settings.copies}>
-            <option value={1}>1 per page</option>
-            <option value={2}>2 per page</option>
-            <option value={4}>4 per page</option>
-          </select>
-        </label>
-        <button class="btn-ghost" onclick={copyImage}>Copy image</button>
-        <button class="btn-ghost" onclick={() => downloadPng(svg, `${filename}.png`)}>Download PNG</button>
-        <button class="btn-ghost" onclick={() => downloadSvg(svg, `${filename}.svg`)}>Download SVG</button>
-        <button class="btn-ghost" onclick={copyLink}>Copy link</button>
-      </div>
-      <p class="status" aria-live="polite">{status}</p>
     </div>
   </div>
 </div>
@@ -207,56 +185,42 @@
   h1 { font-size: 1.8rem; font-weight: 800; }
   .intro p { margin: 0.4rem 0 0; color: var(--muted); }
 
-  .layout { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .layout { display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
-  .card { padding: 1.1rem 1.25rem; }
   .controls { display: flex; flex-direction: column; gap: 1rem; }
-  h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem; }
-  h2 small { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
+  .card-head { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 1rem 1.1rem 0; }
+  .card-head + :global(.presets) { padding-top: 0.6rem; }
+  .sections { overflow: hidden; }
 
-  input[type='number'], input[type='text'], select, textarea {
-    width: 100%;
-    padding: 0.5rem 0.6rem;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    font: inherit;
-    font-size: 0.95rem;
-    background: #fff;
-    color: var(--ink);
-  }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
-  textarea { resize: vertical; font-family: ui-monospace, Menlo, monospace; }
-
-  .axes {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0.5rem 0.6rem;
-    align-items: center;
-    margin: 1rem 0 0.75rem;
-  }
-  .axes label { font-weight: 600; font-size: 0.92rem; }
-  .axis-head { font-weight: 800; font-size: 0.95rem; }
-  .axis-head small { font-weight: 500; color: var(--muted); }
-  .range { font-size: 0.82rem; color: var(--muted); }
-
-  .check { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.55rem; font-size: 0.95rem; cursor: pointer; }
-  .check input { margin-top: 0.2rem; accent-color: var(--blue); width: 1rem; height: 1rem; flex: none; }
-  .field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.92rem; margin-bottom: 0.65rem; }
-  .field input, .field textarea { font-weight: 400; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-  .hint { margin: -0.2rem 0 0.5rem; font-size: 0.85rem; color: var(--muted); }
-  .equation { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.6rem; font-size: 1.1rem; font-family: 'Times New Roman', serif; }
-  .equation input { width: 5.5rem; font-family: system-ui, sans-serif; }
-  .reset { align-self: flex-start; }
+  .grid-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 0.75rem; }
+  .grid-fields label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; }
+  .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
+  .field:last-child { margin-bottom: 0; }
+  .check { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; font-size: 0.95rem; cursor: pointer; }
+  .check input { accent-color: var(--blue); width: 1rem; height: 1rem; }
 
   .preview { position: sticky; top: 1rem; }
   @media (max-width: 860px) { .preview { position: static; } }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem; }
+  .divider { width: 1px; height: 1.6rem; background: var(--border); margin: 0 0.3rem; }
+  .per-page { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; background: var(--bg); }
+  .per-page button {
+    width: 1.9rem; height: 1.9rem; border: 0; border-radius: 8px; background: transparent;
+    color: var(--muted); font-weight: 700; font-size: 0.9rem;
+  }
+  .per-page button.on { background: #fff; color: var(--blue-dark); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12); }
+  .per-page-label { padding: 0 0.45rem 0 0.25rem; font-size: 0.82rem; color: var(--muted); }
+  @media (max-width: 480px) {
+    .per-page-label, .divider { display: none; }
+    .toolbar { justify-content: space-between; }
+    .toolbar { gap: 0.15rem; padding: 0.35rem; }
+    .toolbar :global(.icon-btn) { width: 2.15rem; height: 2.15rem; }
+    .per-page button { width: 1.7rem; height: 1.7rem; }
+  }
+  .status { min-height: 1.3rem; margin: 0.45rem 0.25rem; color: var(--green); font-weight: 600; font-size: 0.88rem; }
   .sheet { padding: 1rem; display: flex; justify-content: center; }
-  .sheet :global(svg) { max-height: 78vh; width: auto; max-width: 100%; }
-  .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; align-items: center; }
-  .copies select { width: auto; padding: 0.62rem 0.6rem; }
-  .status { min-height: 1.4rem; margin: 0.6rem 0 0; color: var(--green); font-weight: 600; font-size: 0.92rem; }
+  .sheet :global(svg) { max-height: 74vh; width: auto; max-width: 100%; }
 
   .print-sheet { display: none; }
   @media print {

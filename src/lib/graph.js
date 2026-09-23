@@ -1,7 +1,7 @@
 // Lays out a coordinate grid as plain numbers for Graph.svelte to draw. Every
 // block is a square of CELL units; the SVG scales to fit wherever it's shown.
 
-import { axisStart, fmt, parsePoints } from './settings.js'
+import { fmt } from './settings.js'
 
 export const CELL = 32
 const FS = 14 // tick-number font size
@@ -26,8 +26,8 @@ function ticks(blocks, step, start, every) {
 }
 
 export function buildGraph(s) {
-  const x0 = axisStart(s.xBlocks, s.xStep, s.layout, s.xStart)
-  const y0 = axisStart(s.yBlocks, s.yStep, s.layout, s.yStart)
+  const x0 = s.xStart
+  const y0 = s.yStart
   const x1 = x0 + s.xBlocks * s.xStep
   const y1 = y0 + s.yBlocks * s.yStep
   const gridW = s.xBlocks * CELL
@@ -41,12 +41,16 @@ export function buildGraph(s) {
   const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery)
   const ext = s.arrows ? EXT : 0
 
-  const title = s.title.trim()
-  const xLabel = s.xLabel.trim()
-  const yLabel = s.yLabel.trim()
-  const titleRow = title || s.blanks
-  const xSide = xLabel ? !isShort(xLabel) : s.blanks // label (or blank) under the grid
-  const ySide = yLabel ? !isShort(yLabel) : s.blanks
+  // Each label is written text, a blank write-on line for students, or nothing.
+  const title = s.titleMode === 'text' ? s.title.trim() : ''
+  const xLabel = s.xLabelMode === 'text' ? s.xLabel.trim() : ''
+  const yLabel = s.yLabelMode === 'text' ? s.yLabel.trim() : ''
+  const titleBlank = s.titleMode === 'blank'
+  const xBlank = s.xLabelMode === 'blank'
+  const yBlank = s.yLabelMode === 'blank'
+  const titleRow = title || titleBlank
+  const xSide = xLabel ? !isShort(xLabel) : xBlank // label (or blank) under the grid
+  const ySide = yLabel ? !isShort(yLabel) : yBlank
   const xTip = isShort(xLabel)
   const yTip = isShort(yLabel)
 
@@ -59,10 +63,8 @@ export function buildGraph(s) {
   const R = PAD + Math.max((lastX * CHAR) / 2, ext + (xTip ? xLabel.length * FS * 0.8 + 8 : 0))
   const B = PAD + Math.max(ext, Math.max(xNumH, yAxisInside ? ext : 0) + (xSide ? FS * 1.2 + 14 : 0))
 
-  const px = (v) => L + ((v - x0) / s.xStep) * CELL
-  const py = (v) => T + gridH - ((v - y0) / s.yStep) * CELL
-  const axisX = yAxisInside ? px(0) : L
-  const axisY = xAxisInside ? py(0) : T + gridH
+  const axisX = yAxisInside ? L + (-x0 / s.xStep) * CELL : L
+  const axisY = xAxisInside ? T + gridH + (y0 / s.yStep) * CELL : T + gridH
 
   // Tick numbers: x below the x-axis, y to the left of the y-axis. Where the
   // axes cross, a shared value is written once (like the "0" in the corner).
@@ -74,7 +76,7 @@ export function buildGraph(s) {
   for (const t of xTicks) {
     const x = L + t.i * CELL
     const cross = t === xCross
-    numbers.push({ x: cross ? x - 8 : x, y: axisY + FS + 3, text: t.text, anchor: cross ? 'end' : 'middle' })
+    numbers.push({ x: cross ? x - 8 : x, y: axisY + FS + 6, text: t.text, anchor: cross ? 'end' : 'middle' })
   }
   for (const t of yTicks) {
     const y = T + gridH - t.i * CELL
@@ -89,21 +91,17 @@ export function buildGraph(s) {
   const midY = T + gridH / 2
   const titleY = PAD + FS * 1.6
   if (title) labels.push({ x: midX, y: titleY, text: title, kind: 'title' })
-  else if (s.blanks) blanks.push({ x1: midX - Math.min(130, gridW / 2), y1: titleY, x2: midX + Math.min(130, gridW / 2), y2: titleY })
+  else if (titleBlank) blanks.push({ x1: midX - Math.min(130, gridW / 2), y1: titleY, x2: midX + Math.min(130, gridW / 2), y2: titleY })
 
   const xSideY = T + gridH + Math.max(xNumH, yAxisInside ? ext : 0) + FS * 1.2 + 6
   if (xTip) labels.push({ x: L + gridW + ext + 6, y: axisY + FS * 0.4, text: xLabel, kind: 'tip', anchor: 'start' })
   else if (xLabel) labels.push({ x: midX, y: xSideY, text: xLabel, kind: 'side' })
-  else if (s.blanks) blanks.push({ x1: midX - Math.min(100, gridW / 2), y1: xSideY, x2: midX + Math.min(100, gridW / 2), y2: xSideY })
+  else if (xBlank) blanks.push({ x1: midX - Math.min(100, gridW / 2), y1: xSideY, x2: midX + Math.min(100, gridW / 2), y2: xSideY })
 
   const ySideX = PAD + FS * 0.9
   if (yTip) labels.push({ x: axisX, y: T - ext - 6, text: yLabel, kind: 'tip', anchor: 'middle' })
   else if (yLabel) labels.push({ x: ySideX, y: midY, text: yLabel, kind: 'side', rotate: true })
-  else if (s.blanks) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
-
-  // Optional data: points (dots and/or joined) and a line y = mx + b.
-  const pts = parsePoints(s.points).map(([x, y]) => [px(x), py(y)])
-  const line = s.lineOn ? { x1: px(x0), y1: py(s.m * x0 + s.b), x2: px(x1), y2: py(s.m * x1 + s.b) } : null
+  else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
   return {
     width: L + gridW + R,
@@ -117,7 +115,5 @@ export function buildGraph(s) {
     numbers,
     labels,
     blanks,
-    pts,
-    line,
   }
 }

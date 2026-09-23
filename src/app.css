@@ -76,6 +76,76 @@ button {
 .chip:hover { border-color: var(--blue-border); background: var(--blue-soft); }
 .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
 
+/* Form controls */
+input[type='number'], input[type='text'], select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  background: #fff;
+  color: var(--ink);
+}
+input:focus, select:focus { outline: none; border-color: var(--blue); }
+
+/* Segmented choice (e.g. Text / Blank line / None) */
+.segmented { display: flex; gap: 2px; padding: 3px; border-radius: 11px; background: var(--bg); }
+.segmented button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.segmented button:hover { color: var(--ink); }
+.segmented button.on { background: #fff; color: var(--blue-dark); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12); }
+
+/* Square icon buttons with a hover/focus tooltip from data-tip */
+.icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+}
+.icon-btn:hover:not(:disabled) { background: var(--blue-soft); color: var(--blue-dark); }
+.icon-btn:disabled { color: #b5bac4; cursor: default; }
+.icon-btn.primary { background: var(--blue); color: #fff; }
+.icon-btn.primary:hover { background: var(--blue-dark); color: #fff; }
+[data-tip] { position: relative; }
+[data-tip]:hover::after, [data-tip]:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.per-page[data-tip]:has(button:hover)::after { display: none; }
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);

@@ -8,7 +8,6 @@
   const g = $derived(buildGraph(settings))
   const gridColor = $derived(settings.light ? '#9ca3af' : '#111827')
   const INK = '#111827'
-  const DATA = '#1d4ed8'
   const SANS = 'Arial, Helvetica, sans-serif'
   const SERIF = "'Times New Roman', Times, serif"
 </script>
@@ -26,9 +25,6 @@
     <marker id="{id}-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill={INK} />
     </marker>
-    <clipPath id="{id}-clip">
-      <rect x={g.grid.x - 6} y={g.grid.y - 6} width={g.grid.w + 12} height={g.grid.h + 12} />
-    </clipPath>
   </defs>
 
   <rect width={g.width} height={g.height} fill="#fff" />
@@ -49,18 +45,6 @@
       marker-start={settings.arrows ? `url(#${id}-arrow)` : undefined}
       marker-end={settings.arrows ? `url(#${id}-arrow)` : undefined}
     />
-  </g>
-
-  <g clip-path="url(#{id}-clip)">
-    {#if g.line}
-      <line x1={g.line.x1} y1={g.line.y1} x2={g.line.x2} y2={g.line.y2} stroke={DATA} stroke-width="3" stroke-linecap="round" />
-    {/if}
-    {#if g.pts.length > 1 && settings.style !== 'dots'}
-      <polyline points={g.pts.map((p) => p.join(',')).join(' ')} fill="none" stroke={DATA} stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
-    {/if}
-    {#if settings.style !== 'line'}
-      {#each g.pts as [cx, cy]}<circle {cx} {cy} r="5" fill={DATA} />{/each}
-    {/if}
   </g>
 
   <g font-family={SANS} font-size={g.fs} font-weight="bold" fill={INK} stroke="#fff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">
