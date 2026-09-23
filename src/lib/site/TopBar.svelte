@@ -22,7 +22,7 @@
   </nav>
   <a class="built" href="https://teacher.dev" target="_blank" rel="noopener noreferrer">
     <img src="/logo.svg" alt="" width="22" height="22" />
-    <span>Built by <strong>teacher.dev</strong></span>
+    <span>Built by teacher.dev</span>
   </a>
 </header>
 
@@ -44,22 +44,8 @@
   .home { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.1rem; white-space: nowrap; }
   .trail :global(.sep) { color: var(--muted); flex: none; }
   .current { color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .built {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: none;
-    padding: 0.35rem 0.7rem;
-    border-radius: 999px;
-    color: var(--muted);
-    font-size: 0.88rem;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background 0.15s, color 0.15s;
-  }
-  .built strong { color: var(--ink); font-weight: 700; }
-  .built:hover { background: var(--blue-soft); color: var(--blue-dark); }
-  .built:hover strong { color: var(--blue-dark); }
+  .built { display: inline-flex; align-items: center; gap: 0.5rem; flex: none; color: var(--muted); font-size: 0.9rem; text-decoration: none; white-space: nowrap; }
+  .built:hover span { text-decoration: underline; text-underline-offset: 3px; }
   /* Phones keep the site name and drop the generator's name, which the page shows anyway. */
   @media (max-width: 640px) {
     .trail :global(.sep), .current { display: none; }

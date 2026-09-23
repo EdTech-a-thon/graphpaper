@@ -16,7 +16,7 @@ and `docs/adr/` for decisions.
 - `/about`, `/privacy`, `/sitemap.xml`, `/robots.txt`
 
 Every page has the top bar: the site name, the current generator, and a
-"Built by teacher.dev" link. The directory's search box filters its cards as
+"Built by teacher.dev" link, which the footer repeats. The directory's search box filters its cards as
 you type, and its last card is **Request a generator**. Generators fill the
 window with no footer. The help button in the corner opens the same kind of
 email dialog.

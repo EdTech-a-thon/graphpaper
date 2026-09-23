@@ -24,10 +24,10 @@
       flash('Your browser blocked copying. Try downloading a PNG instead.')
     }
   }
-  async function copyLink() {
+  async function shareLink() {
     try {
       await navigator.clipboard.writeText(window.location.href)
-      flash('Link copied. It opens this exact figure.')
+      flash('Link copied. Share it, and anyone who opens it sees this exact figure.')
     } catch {
       flash('Copy the address bar to share this figure.')
     }
@@ -41,7 +41,7 @@
     <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
     <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
     <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
-    <button class="icon-btn" aria-label="Copy link" data-tip="Copy link" onclick={copyLink}><Link size={19} /></button>
+    <button class="icon-btn" aria-label="Share link" data-tip="Share link" onclick={shareLink}><Link size={19} /></button>
     <span class="divider"></span>
     <button class="icon-btn" aria-label="Undo" data-tip="Undo" disabled={!history.canUndo} onclick={history.undo}><Undo2 size={19} /></button>
     <button class="icon-btn" aria-label="Redo" data-tip="Redo" disabled={!history.canRedo} onclick={history.redo}><Redo2 size={19} /></button>
