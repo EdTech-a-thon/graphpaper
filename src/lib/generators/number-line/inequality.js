@@ -88,12 +88,12 @@ function setOf(node, vars) {
     }
     return set
   }
-  throw new ReadError('Try an inequality like −2 < x ≤ 5 or x < −1 or x ≥ 3.')
+  throw new ReadError('Try an equation like −2 < x ≤ 5 or x < −1 or x ≥ 3.')
 }
 
 function number(node) {
   const v = evaluate(node)
-  if (v === null || !Number.isFinite(v)) throw new ReadError('Each side of an inequality needs a number, like x < 3 or x ≥ 3π/2.')
+  if (v === null || !Number.isFinite(v)) throw new ReadError('Each side of an equation needs a number, like x < 3 or x ≥ 3π/2.')
   return v
 }
 

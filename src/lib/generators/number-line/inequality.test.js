@@ -46,9 +46,9 @@ describe('parseInequality', () => {
     ['2x + 1 < 7', 'Put the letter on one side'],
     ['x < y', 'Put the letter on one side'],
     ['x < 1 or y > 2', 'Use one letter throughout'],
-    ['x <', 'Each side of an inequality needs a number'],
-    ['hello', 'Try an inequality'],
-    ['x < 1/0', 'Each side of an inequality needs a number'],
+    ['x <', 'Each side of an equation needs a number'],
+    ['hello', 'Try an equation'],
+    ['x < 1/0', 'Each side of an equation needs a number'],
   ])('explains what is wrong with %s', (text, start) => {
     expect(parseInequality(text).error).toMatch(new RegExp(`^${start}`))
   })

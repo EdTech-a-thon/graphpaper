@@ -61,21 +61,21 @@ _Avoid_: Format, label style
 ### Number lines
 
 **Number Line**:
-A figure of one horizontal axis with evenly spaced ticks, for placing numbers and graphing inequalities in one variable. Its generator is the Number Line Generator.
+A figure of one horizontal axis with evenly spaced ticks, for placing numbers and graphing equations and inequalities in one variable. Its generator is the Number Line Generator.
 _Avoid_: Line graph, ruler
 
-**Inequality**:
-What the teacher types to graph on a number line, such as −2 < x ≤ 5 or x < −1 or x ≥ 3. A number line with no inequality is blank.
+**Equation**:
+What the teacher types to graph on a number line, such as −2 < x ≤ 5, x < −1 or x ≥ 3, or x = 2. Most are inequalities, but the page calls it an equation. A number line with no equation is blank. (The code and page address still call it `inequality`.)
 _Avoid_: Solution set, interval, expression
 
 **Tick**:
 A short mark across a number line at every step of its range. Numbered ticks are drawn longer than the ticks between them.
 _Avoid_: Notch, hash mark, gridline
 
-**Inequality graph**:
-The thick line, arrows and endpoints drawn over a number line to show which numbers make its inequality true. Where it runs off an end it has its own arrow, just inside the number line's arrow.
+**Equation graph**:
+The thick line, arrows and endpoints drawn over a number line to show which numbers make its equation true. Where it runs off an end it has its own arrow, just inside the number line's arrow.
 _Avoid_: Shading, solution, plot
 
 **Endpoint**:
-Where an inequality's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
+Where an equation's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
 _Avoid_: Dot, point, boundary

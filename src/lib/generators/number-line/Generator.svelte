@@ -3,7 +3,7 @@
   // on the left, the figure card on the right. Settings are mirrored into the page
   // address so a bookmark or shared link brings back exactly this number line,
   // and the server renders that same line on first load.
-  import { Ruler } from '@lucide/svelte'
+  import { CircleHelp, Ruler } from '@lucide/svelte'
   import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
@@ -81,19 +81,28 @@
 
       <section class="card inequality">
         <div class="field">
-          <label class="card-head flush" for="inequality">Inequality</label>
+          <div class="head-row">
+            <label class="card-head flush" for="inequality">Equation</label>
+            <span class="tip">
+              <button type="button" class="tip-btn" aria-label="How to type an equation" aria-describedby="equation-tip">
+                <CircleHelp size={17} aria-hidden="true" />
+              </button>
+              <span id="equation-tip" role="tooltip" class="tip-text">
+                Try x &lt; −1 or x ≥ 3, x ≠ 2, all real numbers or no solution. Type &lt;= for ≤, != for ≠, pi for π and / for a
+                fraction. Leave it empty for a blank line.
+              </span>
+            </span>
+          </div>
           <MathInput
             kind="inequality"
             id="inequality"
             placeholder="−2 < x ≤ 5"
             aria-invalid={!!line.problems.inequality}
-            aria-describedby="inequality-help"
+            aria-describedby={line.problems.inequality ? 'equation-problem' : undefined}
             bind:value={settings.inequality}
           />
         </div>
-        <p id="inequality-help" class="help" class:problem={line.problems.inequality}>
-          {line.problems.inequality ?? 'Try x < −1 or x ≥ 3, x ≠ 2, all real numbers or no solution. Type <= for ≤, != for ≠, pi for π and / for a fraction.'}
-        </p>
+        {#if line.problems.inequality}<p id="equation-problem" class="help problem">{line.problems.inequality}</p>{/if}
       </section>
 
       <section class="card sections">
@@ -156,6 +165,18 @@
   .sections { overflow: hidden; }
 
   .inequality { padding: 1rem 1.1rem; }
+  .inequality .field { margin-bottom: 0; }
+  .head-row { display: flex; align-items: center; justify-content: space-between; }
+  .tip { position: relative; display: inline-flex; }
+  .tip-btn { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: help; }
+  .tip-btn:hover, .tip-btn:focus-visible { color: var(--blue-dark); background: var(--blue-soft); }
+  .tip-text {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: min(17rem, 80vw);
+    padding: 0.55rem 0.7rem; border-radius: 8px; background: var(--ink); color: #fff;
+    font-size: 0.8rem; font-weight: 500; line-height: 1.4; pointer-events: none;
+    visibility: hidden; opacity: 0; transition: opacity 0.12s;
+  }
+  .tip:hover .tip-text, .tip-btn:focus-visible + .tip-text { visibility: visible; opacity: 1; }
   .help { margin: 0.45rem 0 0; font-size: 0.84rem; color: var(--muted); }
   .help.problem { color: var(--red); font-weight: 600; }
 
