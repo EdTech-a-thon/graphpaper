@@ -15,4 +15,4 @@ Caret is unpublished and its packages don't build on install, so we work on a lo
 - Caret has no license file yet. Its author has said we can use it, and on that basis it ships in Math Figures; a license file would still be better.
 - Caret's parser relies on `instanceof`, so the app must load exactly one copy of `@caret-js/core`, and only its ES module build.
 - The query string stores a plain ASCII form of each input (`x<-1 or x>=3`, `pi`), so links stay readable and never depend on Caret's internal Doc format.
-- Updating Caret means rebuilding the tarballs (`npm run caret`) and committing them.
+- Updating Caret means rebuilding the tarballs (`npm run caret`) and committing them. Every build is version 0.0.0, so `npm install` over an existing `node_modules` keeps the old one; Vercel restores `node_modules` from its build cache, so `vercel.json` installs with `npm ci`, which always starts clean. Locally, run `npm ci` after pulling a Caret update.
