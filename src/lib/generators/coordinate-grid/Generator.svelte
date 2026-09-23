@@ -5,7 +5,7 @@
   // page address so a bookmark or shared link brings back exactly this grid,
   // and the server renders that same grid on first load.
   import { Heading, MoveRight, MoveUp } from '@lucide/svelte'
-  import { replaceState } from '$app/navigation'
+  import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
@@ -21,9 +21,13 @@
   const clean = $derived(cleanSettings(settings))
   const query = $derived(settingsToQuery(clean))
 
+  // The router can't replace the address until the page has hydrated, which
+  // matters when a link arrives written differently from how we'd write it.
+  let routerReady = $state(false)
+  afterNavigate(() => (routerReady = true))
   $effect(() => {
     const url = query ? `${page.url.pathname}?${query}` : page.url.pathname
-    if (url !== `${location.pathname}${location.search}`) replaceState(url, page.state)
+    if (routerReady && url !== `${location.pathname}${location.search}`) replaceState(url, page.state)
   })
 
   const history = createHistory({

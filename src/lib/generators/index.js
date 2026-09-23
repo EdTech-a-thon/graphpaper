@@ -3,6 +3,7 @@
 // folder and one entry here.
 
 import CoordinateGridPreview from './coordinate-grid/Preview.svelte'
+import NumberLinePreview from './number-line/Preview.svelte'
 
 /**
  * @typedef {object} Generator
@@ -31,6 +32,21 @@ export const GENERATORS = [
       'graphing', 'linear equations', 'slope', 'grid', 'graph', 'blank graph', 'printable',
     ],
     Preview: CoordinateGridPreview,
+  },
+  {
+    id: 'number-line',
+    name: 'Number Line Generator',
+    path: '/number-line',
+    blurb: 'Number lines with any range, and inequalities graphed on them.',
+    description:
+      'Make a printable number line for your class. Choose the range, the numbering (decimals, fractions or π) and graph an inequality with open and closed circles, then copy it into a worksheet or test.',
+    keywords: [
+      'number line', 'inequality', 'inequalities', 'graph inequalities', 'compound inequality', 'compound inequalities',
+      'and', 'or', 'open circle', 'closed circle', 'interval', 'interval notation', 'solution set', 'integers',
+      'negative numbers', 'fractions', 'decimals', 'pi', 'radians', 'real numbers', 'one variable', 'blank number line',
+      'printable',
+    ],
+    Preview: NumberLinePreview,
   },
 ]
 

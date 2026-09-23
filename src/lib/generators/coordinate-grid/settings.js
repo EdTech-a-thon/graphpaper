@@ -1,12 +1,15 @@
 // Every choice the teacher makes, with its default. The page address carries
 // any non-default values so a graph can be bookmarked or shared.
 
+import { CAPS } from '$lib/shared/caps.js'
+
+export { CAPS }
+export { fmt } from '$lib/shared/numbering.js'
+
 export const MAX_BLOCKS = 50
 export const EVERY = [1, 2, 5, 10, 0] // number every nth line; 0 = no numbers
 export const TITLE_MODES = ['text', 'blank', 'none'] // written title, write-on line for students, nothing
 export const LABEL_MODES = ['text', 'none'] // the letter at an axis arrow, like x or y
-/** How each end of an axis finishes, like line end caps in Figma. */
-export const CAPS = { triangle: 'Triangle arrow', line: 'Line arrow', circle: 'Circle', none: 'None' }
 const CAP_KEYS = ['xStartCap', 'xEndCap', 'yStartCap', 'yEndCap']
 
 export const DEFAULT_SETTINGS = {
@@ -116,10 +119,4 @@ export function settingsFromParams(params) {
     else s[key] = raw
   }
   return cleanSettings(s)
-}
-
-/** A tick number, free of float noise, with a true minus sign. */
-export function fmt(v) {
-  const n = Number(v.toFixed(10))
-  return (Object.is(n, -0) ? 0 : n).toString().replace('-', '−')
 }
