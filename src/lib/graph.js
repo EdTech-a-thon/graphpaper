@@ -36,7 +36,11 @@ export function buildGraph(s) {
 
   const xTicks = ticks(s.xBlocks, s.xStep, x0, s.xEvery)
   const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery)
-  const ext = s.arrows ? EXT : 0
+  // An axis runs a little past the grid wherever it ends in a cap.
+  const extL = s.xStartCap === 'none' ? 0 : EXT
+  const extR = s.xEndCap === 'none' ? 0 : EXT
+  const extB = s.yStartCap === 'none' ? 0 : EXT
+  const extT = s.yEndCap === 'none' ? 0 : EXT
 
   // Titles are written text, a blank write-on line for students, or nothing.
   // The chart title sits on top; axis titles run along the bottom and left.
@@ -59,12 +63,23 @@ export function buildGraph(s) {
   const xNumH = !xAxisInside && xTicks.length ? FS + 8 : 0
   const lastX = xTicks.at(-1)?.text.length ?? 0
 
-  const L = PAD + (ySide ? FS * 1.2 + 12 : 0) + Math.max(ext, yNumW)
-  const T = PAD + (titleRow ? FS * 1.6 + 14 : 0) + ext + (yTip ? FS * 1.3 + 4 : 0)
-  const R = PAD + Math.max((lastX * CHAR) / 2, ext + (xTip ? xLabel.length * FS * 0.8 + 8 : 0))
-  const B = PAD + Math.max(ext, Math.max(xNumH, yAxisInside ? ext : 0) + (xSide ? FS * 1.2 + 14 : 0))
+  // Tip labels can be any length; a long y label centered over its axis may
+  // need room on either side.
+  const TIP_CHAR = FS * 0.75
+  const yTipHalf = yTip ? (yLabel.length * TIP_CHAR) / 2 : 0
+  const yAxisOffset = yAxisInside ? (-x0 / s.xStep) * CELL : 0
+  const yTipGap = Math.max(extT, 10) // keeps the label clear of the top number
 
-  const axisX = yAxisInside ? L + (-x0 / s.xStep) * CELL : L
+  const L = Math.max(PAD + (ySide ? FS * 1.2 + 12 : 0) + Math.max(extL, yNumW), PAD + yTipHalf - yAxisOffset)
+  const T = PAD + (titleRow ? FS * 1.6 + 14 : 0) + (yTip ? yTipGap + FS * 1.3 + 4 : extT)
+  const R = PAD + Math.max(
+    (lastX * CHAR) / 2,
+    extR + (xTip ? xLabel.length * TIP_CHAR + 8 : 0),
+    yTipHalf - (gridW - yAxisOffset),
+  )
+  const B = PAD + Math.max(extB, Math.max(xNumH, yAxisInside ? extB : 0) + (xSide ? FS * 1.2 + 14 : 0))
+
+  const axisX = L + yAxisOffset
   const axisY = xAxisInside ? T + gridH + (y0 / s.yStep) * CELL : T + gridH
 
   // Tick numbers: x below the x-axis, y to the left of the y-axis. Where the
@@ -94,13 +109,13 @@ export function buildGraph(s) {
   if (title) labels.push({ x: midX, y: titleY, text: title, kind: 'title' })
   else if (titleBlank) blanks.push({ x1: midX - Math.min(130, gridW / 2), y1: titleY, x2: midX + Math.min(130, gridW / 2), y2: titleY })
 
-  const xSideY = T + gridH + Math.max(xNumH, yAxisInside ? ext : 0) + FS * 1.2 + 6
-  if (xTip) labels.push({ x: L + gridW + ext + 6, y: axisY + FS * 0.4, text: xLabel, kind: 'tip', anchor: 'start' })
+  const xSideY = T + gridH + Math.max(xNumH, yAxisInside ? extB : 0) + FS * 1.2 + 6
+  if (xTip) labels.push({ x: L + gridW + extR + 6, y: axisY + FS * 0.4, text: xLabel, kind: 'tip', anchor: 'start' })
   if (xTitle) labels.push({ x: midX, y: xSideY, text: xTitle, kind: 'side' })
   else if (xBlank) blanks.push({ x1: midX - Math.min(100, gridW / 2), y1: xSideY, x2: midX + Math.min(100, gridW / 2), y2: xSideY })
 
   const ySideX = PAD + FS * 0.9
-  if (yTip) labels.push({ x: axisX, y: T - ext - 6, text: yLabel, kind: 'tip', anchor: 'middle' })
+  if (yTip) labels.push({ x: axisX, y: T - yTipGap - 6, text: yLabel, kind: 'tip', anchor: 'middle' })
   if (yTitle) labels.push({ x: ySideX, y: midY, text: yTitle, kind: 'side', rotate: true })
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
@@ -111,8 +126,8 @@ export function buildGraph(s) {
     grid: { x: L, y: T, w: gridW, h: gridH },
     vLines: Array.from({ length: s.xBlocks + 1 }, (_, i) => L + i * CELL),
     hLines: Array.from({ length: s.yBlocks + 1 }, (_, j) => T + j * CELL),
-    xAxis: { x1: L - ext, x2: L + gridW + ext, y: axisY },
-    yAxis: { y1: T + gridH + ext, y2: T - ext, x: axisX },
+    xAxis: { x1: L - extL, x2: L + gridW + extR, y: axisY },
+    yAxis: { y1: T + gridH + extB, y2: T - extT, x: axisX },
     numbers,
     labels,
     blanks,

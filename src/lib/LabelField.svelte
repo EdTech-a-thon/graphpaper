@@ -3,7 +3,7 @@
   // to write on (titles only), or nothing at all.
   import { Ban, PencilLine, Type } from '@lucide/svelte'
 
-  let { name, mode = $bindable(), text = $bindable(), placeholder = '', blank = true, maxlength = undefined } = $props()
+  let { name, mode = $bindable(), text = $bindable(), placeholder = '', blank = true } = $props()
 
   const MODES = $derived([
     ['text', 'Text', Type],
@@ -28,7 +28,7 @@
     {/each}
   </div>
   {#if mode === 'text'}
-    <input type="text" aria-label="{name} text" {placeholder} {maxlength} bind:value={text} />
+    <input type="text" aria-label="{name} text" {placeholder} bind:value={text} />
   {:else if mode === 'blank'}
     <p class="note">Students write the {name.toLowerCase()} on a blank line.</p>
   {/if}

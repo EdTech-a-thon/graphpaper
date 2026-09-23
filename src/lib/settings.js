@@ -5,7 +5,9 @@ export const MAX_BLOCKS = 50
 export const EVERY = [1, 2, 5, 10, 0] // number every nth line; 0 = no numbers
 export const TITLE_MODES = ['text', 'blank', 'none'] // written title, write-on line for students, nothing
 export const LABEL_MODES = ['text', 'none'] // the letter at an axis arrow, like x or y
-export const LABEL_MAX = 4
+/** How each end of an axis finishes, like line end caps in Figma. */
+export const CAPS = { triangle: 'Triangle arrow', line: 'Line arrow', circle: 'Circle', none: 'None' }
+const CAP_KEYS = ['xStartCap', 'xEndCap', 'yStartCap', 'yEndCap']
 
 export const DEFAULT_SETTINGS = {
   xBlocks: 15,
@@ -26,8 +28,10 @@ export const DEFAULT_SETTINGS = {
   xLabelMode: 'text',
   yLabel: 'y',
   yLabelMode: 'text',
-  arrows: true,
-  light: false, // gray grid lines instead of black
+  xStartCap: 'triangle', // left end
+  xEndCap: 'triangle', // right end
+  yStartCap: 'triangle', // bottom end
+  yEndCap: 'triangle', // top end
 }
 
 /** Settings that describe the graph itself, which is what a preset saves. */
@@ -38,24 +42,24 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 const titleMode = (v, fallback) => (TITLE_MODES.includes(v) ? v : fallback)
 const labelMode = (v, fallback) => (LABEL_MODES.includes(v) ? v : fallback)
 
-/** Older links and presets had one label per axis: a blank line or long text
- *  ran along the axis, short text sat at the tip. Move those into titles. */
-function upgradeAxis(s, axis) {
-  const label = `${axis}Label`
-  const mode = `${axis}LabelMode`
-  const title = `${axis}Title`
-  const tMode = `${axis}TitleMode`
-  if (s[mode] === 'blank') return { [mode]: 'none', [tMode]: 'blank' }
-  const text = String(s[label] ?? '').trim()
-  if (text.length > LABEL_MAX && !String(s[title] ?? '').trim()) {
-    return { [label]: '', [mode]: 'none', [title]: text, [tMode]: s[mode] === 'text' ? 'text' : 'none' }
+const cap = (v, fallback) => (v in CAPS ? v : fallback)
+
+/** Older links and presets: an axis label could be a blank line (now an axis
+ *  title), and arrows were one on/off switch for every end. */
+function upgrade(s) {
+  const out = { ...s }
+  for (const axis of ['x', 'y']) {
+    if (s[`${axis}LabelMode`] === 'blank') Object.assign(out, { [`${axis}LabelMode`]: 'none', [`${axis}TitleMode`]: 'blank' })
   }
-  return {}
+  if (s.arrows === false && CAP_KEYS.every((k) => s[k] === undefined)) for (const k of CAP_KEYS) out[k] = 'none'
+  delete out.arrows
+  delete out.light
+  return out
 }
 
 /** Tidy raw form values (number inputs can be empty) into usable settings. */
 export function cleanSettings(s) {
-  s = { ...s, ...upgradeAxis(s, 'x'), ...upgradeAxis(s, 'y') }
+  s = upgrade(s)
   const d = DEFAULT_SETTINGS
   const blocks = (v, f) => clamp(Math.round(num(v, f)), 1, MAX_BLOCKS)
   const step = (v) => (num(v, 1) > 0 ? num(v, 1) : 1)
@@ -73,15 +77,14 @@ export function cleanSettings(s) {
     title: String(s.title ?? ''),
     xTitle: String(s.xTitle ?? ''),
     yTitle: String(s.yTitle ?? ''),
-    xLabel: String(s.xLabel ?? '').slice(0, LABEL_MAX),
-    yLabel: String(s.yLabel ?? '').slice(0, LABEL_MAX),
+    xLabel: String(s.xLabel ?? ''),
+    yLabel: String(s.yLabel ?? ''),
     titleMode: titleMode(s.titleMode, d.titleMode),
     xTitleMode: titleMode(s.xTitleMode, d.xTitleMode),
     yTitleMode: titleMode(s.yTitleMode, d.yTitleMode),
     xLabelMode: labelMode(s.xLabelMode, d.xLabelMode),
     yLabelMode: labelMode(s.yLabelMode, d.yLabelMode),
-    arrows: !!(s.arrows ?? d.arrows),
-    light: !!(s.light ?? d.light),
+    ...Object.fromEntries(CAP_KEYS.map((k) => [k, cap(s[k], d[k])])),
   }
 }
 
@@ -104,6 +107,7 @@ export function settingsToQuery(s) {
 
 export function settingsFromParams(params) {
   const s = structuredClone(DEFAULT_SETTINGS)
+  if (params.get('arrows') === '0' && !CAP_KEYS.some((k) => params.has(k))) for (const k of CAP_KEYS) s[k] = 'none'
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
     if (!params.has(key)) continue
     const raw = params.get(key)

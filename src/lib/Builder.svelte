@@ -5,15 +5,16 @@
   // page address so a bookmark brings back exactly this graph, and every
   // change can be undone.
   import {
-    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Redo2, Undo2,
+    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Redo2, Undo2,
   } from '@lucide/svelte'
+  import CapPicker from './CapPicker.svelte'
   import Footer from './Footer.svelte'
   import Graph from './Graph.svelte'
   import LabelField from './LabelField.svelte'
   import Presets from './Presets.svelte'
   import Section from './Section.svelte'
   import { copyPng, downloadPng, downloadSvg } from './exporting.js'
-  import { LABEL_MAX, MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
+  import { CAPS, MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(new URLSearchParams(window.location.search)))
   const clean = $derived(cleanSettings(settings))
@@ -83,21 +84,17 @@
     [10, 'Every 10th line'],
     [0, 'No numbers'],
   ]
+  // Each axis runs from its start end (left/bottom) to its end end (right/top).
   const AXES = [
-    { axis: 'x', title: 'x-axis', icon: MoveRight },
-    { axis: 'y', title: 'y-axis', icon: MoveUp },
+    { axis: 'x', title: 'x-axis', icon: MoveRight, ends: [['Start', 'Left end', 'left'], ['End', 'Right end', 'right']] },
+    { axis: 'y', title: 'y-axis', icon: MoveUp, ends: [['Start', 'Bottom end', 'down'], ['End', 'Top end', 'up']] },
   ]
 
-  // Titles on top, then the letters at the arrow tips, like Excel and Sheets
-  // call them: a chart title and axis titles.
+  // Named the way Excel and Sheets name them: a chart title and axis titles.
   const TITLES = [
     { key: 'title', name: 'Chart title', placeholder: 'Distance over time' },
     { key: 'xTitle', name: 'x-axis title', placeholder: 'Time (hours)' },
     { key: 'yTitle', name: 'y-axis title', placeholder: 'Distance (km)' },
-  ]
-  const LABELS = [
-    { key: 'xLabel', name: 'x-axis label', placeholder: 'x' },
-    { key: 'yLabel', name: 'y-axis label', placeholder: 'y' },
   ]
   function axisSummary(axis) {
     const blocks = clean[`${axis}Blocks`]
@@ -108,18 +105,21 @@
       `${fmt(start)} to ${fmt(start + blocks * step)}`,
       `by ${fmt(step)}s`,
       every ? (every === 1 ? 'numbered' : `numbered every ${every}`) : 'unnumbered',
+      clean[`${axis}LabelMode`] === 'text' && clean[`${axis}Label`].trim() ? `“${clean[`${axis}Label`].trim()}”` : 'no label',
+      endsSummary(clean[`${axis}StartCap`], clean[`${axis}EndCap`]),
     ].join(' · ')
+  }
+  function endsSummary(start, end) {
+    if (start === end) return start === 'none' ? 'plain ends' : `${CAPS[start].toLowerCase()}s`
+    return `${CAPS[start].toLowerCase()} / ${CAPS[end].toLowerCase()}`
   }
   const titlesSummary = $derived.by(() => {
     const shown = (key) => (clean[`${key}Mode`] === 'text' ? clean[key].trim() : '')
     const parts = TITLES.map(({ key, name }) =>
       clean[`${key}Mode`] === 'blank' ? `${name}: blank line` : shown(key) ? `“${shown(key)}”` : '',
     )
-    const tips = LABELS.map(({ key }) => shown(key)).filter(Boolean)
-    if (tips.length) parts.push(`labels ${tips.join(', ')}`)
     return parts.filter(Boolean).join(' · ') || 'None'
   })
-  const styleSummary = $derived(`${clean.arrows ? 'Arrows' : 'No arrows'} · ${clean.light ? 'light gray' : 'black'} grid lines`)
 
   function applyPreset(preset) {
     settings = $state.snapshot(preset)
@@ -182,15 +182,9 @@
               <LabelField {name} {placeholder} bind:mode={settings[`${key}Mode`]} bind:text={settings[key]} />
             </div>
           {/each}
-          {#each LABELS as { key, name, placeholder }}
-            <div class="field">
-              <span>{name} <span class="hint">at the arrow</span></span>
-              <LabelField {name} {placeholder} blank={false} maxlength={LABEL_MAX} bind:mode={settings[`${key}Mode`]} bind:text={settings[key]} />
-            </div>
-          {/each}
         </Section>
 
-        {#each AXES as { axis, title, icon }}
+        {#each AXES as { axis, title, icon, ends }}
           <Section {title} {icon} summary={axisSummary(axis)}>
             <div class="grid-fields">
               <label>Blocks <input type="number" min="1" max={MAX_BLOCKS} bind:value={settings[`${axis}Blocks`]} /></label>
@@ -203,13 +197,26 @@
                 {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
               </select>
             </label>
+            <div class="field">
+              <span>Label <span class="hint">at the {axis === 'x' ? 'right' : 'top'} end</span></span>
+              <LabelField
+                name="{title} label"
+                placeholder={axis}
+                blank={false}
+                bind:mode={settings[`${axis}LabelMode`]}
+                bind:text={settings[`${axis}Label`]}
+              />
+            </div>
+            <div class="ends">
+              {#each ends as [key, name, direction]}
+                <div class="field">
+                  <span>{name}</span>
+                  <CapPicker label="{title} {name.toLowerCase()}" {direction} bind:value={settings[`${axis}${key}Cap`]} />
+                </div>
+              {/each}
+            </div>
           </Section>
         {/each}
-
-        <Section title="Style" icon={Palette} summary={styleSummary}>
-          <label class="check"><input type="checkbox" bind:checked={settings.arrows} /> Arrows on the axes</label>
-          <label class="check"><input type="checkbox" bind:checked={settings.light} /> Light gray grid lines</label>
-        </Section>
       </section>
     </div>
 
@@ -277,8 +284,8 @@
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
   .field:last-child { margin-bottom: 0; }
   .field .hint { font-weight: 400; color: var(--muted); }
-  .check { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; font-size: 0.95rem; cursor: pointer; }
-  .check input { accent-color: var(--blue); width: 1rem; height: 1rem; }
+  .ends { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .ends .field { margin-bottom: 0; }
 
   .canvas { display: flex; flex-direction: column; }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem; border-bottom: 1px solid var(--border); }

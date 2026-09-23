@@ -6,8 +6,8 @@
   let { settings, svg = $bindable(), id = 'g' } = $props()
 
   const g = $derived(buildGraph(settings))
-  const gridColor = $derived(settings.light ? '#9ca3af' : '#111827')
   const INK = '#111827'
+  const cap = (c) => (c === 'none' ? undefined : `url(#${id}-${c})`)
   const SANS = 'Arial, Helvetica, sans-serif'
   const SERIF = "'Times New Roman', Times, serif"
 </script>
@@ -22,14 +22,21 @@
   aria-label={settings.title || 'Coordinate grid'}
 >
   <defs>
-    <marker id="{id}-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <!-- Axis end caps; each axis runs from its start (left/bottom) to its end (right/top). -->
+    <marker id="{id}-triangle" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill={INK} />
+    </marker>
+    <marker id="{id}-line" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path d="M1.5,1 L8.6,5 L1.5,9" fill="none" stroke={INK} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </marker>
+    <marker id="{id}-circle" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse">
+      <circle cx="5" cy="5" r="5" fill={INK} />
     </marker>
   </defs>
 
   <rect width={g.width} height={g.height} fill="#fff" />
 
-  <g stroke={gridColor} stroke-width="1" shape-rendering="crispEdges">
+  <g stroke={INK} stroke-width="1" shape-rendering="crispEdges">
     {#each g.vLines as x}<line x1={x} y1={g.grid.y} x2={x} y2={g.grid.y + g.grid.h} />{/each}
     {#each g.hLines as y}<line x1={g.grid.x} y1={y} x2={g.grid.x + g.grid.w} y2={y} />{/each}
   </g>
@@ -37,13 +44,11 @@
   <g stroke={INK} stroke-width="2.4">
     <line
       x1={g.xAxis.x1} y1={g.xAxis.y} x2={g.xAxis.x2} y2={g.xAxis.y}
-      marker-start={settings.arrows ? `url(#${id}-arrow)` : undefined}
-      marker-end={settings.arrows ? `url(#${id}-arrow)` : undefined}
+      marker-start={cap(settings.xStartCap)} marker-end={cap(settings.xEndCap)}
     />
     <line
       x1={g.yAxis.x} y1={g.yAxis.y1} x2={g.yAxis.x} y2={g.yAxis.y2}
-      marker-start={settings.arrows ? `url(#${id}-arrow)` : undefined}
-      marker-end={settings.arrows ? `url(#${id}-arrow)` : undefined}
+      marker-start={cap(settings.yStartCap)} marker-end={cap(settings.yEndCap)}
     />
   </g>
 
