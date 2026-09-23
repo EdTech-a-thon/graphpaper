@@ -80,6 +80,10 @@ _Avoid_: Shading, solution, plot
 A line drawn across a coordinate grid from an equation, running edge to edge with an arrowhead where it leaves the grid. Only straight lines for now: no curves and no shaded inequalities.
 _Avoid_: Plot, function, curve
 
+**Row style**:
+How one equation is drawn, set from its Customize button: a color, a line style (solid, dashed or dotted) and which ends have arrows (both, neither, left or right; for an up-and-down line, left means the bottom). Points take only the color.
+_Avoid_: Format, appearance, theme
+
 **Endpoint**:
 Where an equation's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
 _Avoid_: Dot, point, boundary

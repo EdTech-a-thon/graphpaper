@@ -16,20 +16,22 @@
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
-  import { readEquations } from './equations.js'
+  import { ROW_DEFAULTS, readEquations } from './equations.js'
+  import RowStyle from './RowStyle.svelte'
   import Graph from './Graph.svelte'
   import { presetStore } from './presets.js'
   import { CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
 
   // There's always a row to type the next equation in.
-  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [''] })
+  const blankRow = () => ({ ...ROW_DEFAULTS })
+  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [blankRow()] })
 
   let settings = $state(withRow(settingsFromParams(page.url.searchParams)))
   const clean = $derived(cleanSettings(settings))
   const query = $derived(settingsToQuery(clean))
   const axes = $derived(readAxes(clean))
   const rows = $derived(
-    readEquations(clean.equations, {
+    readEquations(clean.equations.map((r) => r.text), {
       x0: axes.x.start, x1: axes.x.start + axes.x.blocks * axes.x.step,
       y0: axes.y.start, y1: axes.y.start + axes.y.blocks * axes.y.step,
     }),
@@ -37,13 +39,13 @@
 
   // A new row, unless the last one is still empty, which gets the focus instead.
   function addRow() {
-    if (settings.equations.at(-1)?.trim() !== '') settings.equations.push('')
+    if (settings.equations.at(-1)?.text.trim() !== '') settings.equations.push(blankRow())
     const i = settings.equations.length - 1
     requestAnimationFrame(() => document.getElementById(`eq-${i}`)?.focus())
   }
   function removeRow(i) {
     settings.equations.splice(i, 1)
-    if (!settings.equations.length) settings.equations.push('')
+    if (!settings.equations.length) settings.equations.push(blankRow())
   }
 
   // The router can't replace the address until the page has hydrated, which
@@ -140,7 +142,7 @@
             a fraction and pi for π.
           </HelpTip>
         </div>
-        {#each settings.equations as _, i}
+        {#each settings.equations as row, i}
           <div class="row">
             <MathInput
               kind="equation"
@@ -148,8 +150,9 @@
               aria-label="Equation {i + 1}"
               placeholder={i === 0 ? 'y = 2x + 1' : ''}
               aria-invalid={!!rows[i]?.problem}
-              bind:value={settings.equations[i]}
+              bind:value={row.text}
             />
+            <RowStyle {row} id="eq-{i}-style" label="equation {i + 1}" isPoints={!!rows[i]?.points} />
             <button class="icon-btn" aria-label="Remove equation {i + 1}" data-tip="Remove" onclick={() => removeRow(i)}><X size={17} /></button>
           </div>
           {#if rows[i]?.problem}<p class="help problem">{rows[i].problem}</p>{/if}
@@ -251,8 +254,8 @@
 
   .equations { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .head-row { display: flex; align-items: center; justify-content: space-between; }
-  .row { display: flex; align-items: center; gap: 0.35rem; }
-  .row > :global(:first-child) { flex: 1; min-width: 0; }
+  .row { display: flex; align-items: center; gap: 0.25rem; }
+  .row > :global(:first-child) { flex: 1; min-width: 0; margin-right: 0.2rem; }
   .equations .help { margin: -0.2rem 0 0; font-size: 0.84rem; }
   .add {
     align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem;

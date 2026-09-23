@@ -2,7 +2,7 @@
 // block is a square of CELL units; the SVG scales to fit wherever it's shown.
 
 import { numberText } from '$lib/shared/numbering.js'
-import { readEquations } from './equations.js'
+import { COLORS, readEquations } from './equations.js'
 import { readAxes } from './settings.js'
 
 export const CELL = 32
@@ -125,29 +125,43 @@ export function buildGraph(settings) {
   if (yTitle) labels.push({ x: ySideX, y: midY, text: yTitle, kind: 'side', rotate: true })
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
-  // What the teacher graphed: lines run edge to edge with an arrowhead where
-  // they leave the grid; points are dots.
+  // What the teacher graphed: lines run edge to edge, with an arrowhead where
+  // they leave the grid at the ends the teacher picked; points are dots.
   const px = ({ x, y }) => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
   const box = { x0, x1, y0, y1 }
   const lines = []
   const dots = []
-  for (const row of readEquations(settings.equations ?? [], box)) {
-    if (row?.ends) {
-      const [p, q] = row.ends.map(px)
+  const rows = settings.equations ?? []
+  readEquations(rows.map((r) => r.text), box).forEach((read, i) => {
+    const { color, line: style, arrows } = rows[i]
+    const ink = COLORS[color]
+    if (read?.ends) {
+      // p is the left end (the bottom, for an up-and-down line), q the right.
+      const [a, b] = read.ends
+      const leftFirst = Math.abs(a.x - b.x) > 1e-9 ? a.x < b.x : a.y < b.y
+      const [p, q] = (leftFirst ? [a, b] : [b, a]).map(px)
       const len = Math.hypot(q.x - p.x, q.y - p.y)
       const u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len }
       const head = (tip, dir) => {
         const base = { x: tip.x - dir * u.x * HEAD, y: tip.y - dir * u.y * HEAD }
         return `M${tip.x},${tip.y} L${base.x - u.y * HEAD_HALF},${base.y + u.x * HEAD_HALF} L${base.x + u.y * HEAD_HALF},${base.y - u.x * HEAD_HALF} z`
       }
-      const inset = Math.min(HEAD - 1, len / 2)
+      const fits = len > HEAD * 2
+      const atLeft = fits && (arrows === 'both' || arrows === 'left')
+      const atRight = fits && (arrows === 'both' || arrows === 'right')
+      const inset = HEAD - 1
       lines.push({
-        x1: p.x + u.x * inset, y1: p.y + u.y * inset, x2: q.x - u.x * inset, y2: q.y - u.y * inset,
-        heads: len > HEAD * 2 ? [head(p, -1), head(q, 1)] : [],
+        x1: p.x + (atLeft ? u.x * inset : 0), y1: p.y + (atLeft ? u.y * inset : 0),
+        x2: q.x - (atRight ? u.x * inset : 0), y2: q.y - (atRight ? u.y * inset : 0),
+        heads: [atLeft && head(p, -1), atRight && head(q, 1)].filter(Boolean),
+        color: ink,
+        dash: style === 'dashed' ? '9 6' : style === 'dotted' ? '0.01 6' : undefined,
+        cap: style === 'dotted' ? 'round' : 'butt',
+        width: style === 'dotted' ? 3.2 : 2.5, // round dots look lighter than a solid stroke
       })
     }
-    for (const pt of row?.points ?? []) dots.push(px(pt))
-  }
+    for (const pt of read?.points ?? []) dots.push({ ...px(pt), color: ink })
+  })
 
   return {
     width: L + gridW + R,

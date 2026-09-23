@@ -7,18 +7,54 @@ import { CommaListNode, ComparisonNode, ParenthesesChildTag, VariableNode, evalu
 import { fromText, parsers } from '$lib/shared/math.js'
 import { fmt } from '$lib/shared/numbering.js'
 
-const EXAMPLE = 'Try a line like y = 2x + 1 or a point like (2, 3).'
+const EXAMPLE = 'Try a line like y = 2x + 1, a point like (2, 3), or a list of points like (2, 3), (1, 4).'
 
 class ReadError extends Error {}
+
+/** How a row is drawn. Colors print well in color and read as distinct in gray. */
+export const COLORS = {
+  black: '#111827',
+  blue: '#2563eb',
+  red: '#dc2626',
+  green: '#15803d',
+  orange: '#ea580c',
+  purple: '#7c3aed',
+}
+export const LINE_STYLES = { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted' }
+// Which ends of a line get an arrowhead. "left" is the end with the smaller x
+// (the bottom, for an up-and-down line).
+export const ARROWS = { both: 'Both ends', none: 'No arrows', left: 'Left end', right: 'Right end' }
+export const ROW_DEFAULTS = { text: '', color: 'black', line: 'solid', arrows: 'both' }
+
+const STYLE_KEYS = { color: COLORS, line: LINE_STYLES, arrows: ARROWS }
+
+/** A row from a form, a stored preset or an older link (just its text). */
+export function cleanRow(r) {
+  if (typeof r !== 'object' || r === null) return { ...ROW_DEFAULTS, text: String(r ?? '') }
+  const out = { ...ROW_DEFAULTS, text: String(r.text ?? '') }
+  for (const [k, list] of Object.entries(STYLE_KEYS)) if (r[k] in list) out[k] = r[k]
+  return out
+}
+
+/** A row as one value in the page address: "y=2x+1", or "y=2x+1|color=red|line=dashed". */
+export function rowToParam(r) {
+  const style = Object.keys(STYLE_KEYS).filter((k) => r[k] !== ROW_DEFAULTS[k]).map((k) => `${k}=${r[k]}`)
+  return [r.text.trim(), ...style].join('|')
+}
+
+export function rowFromParam(value) {
+  const [text, ...style] = String(value).split('|')
+  return cleanRow({ text, ...Object.fromEntries(style.map((kv) => kv.split('='))) })
+}
 
 /** A bracketed pair like (2, 3) as { x, y }. */
 function point(node) {
   if (!(node instanceof CommaListNode && node.hasTag(ParenthesesChildTag) && node.expressions.length === 2)) {
-    throw new ReadError('Write each point as (x, y), like (2, 3).')
+    throw new ReadError('Write each point as (x, y), like (2, 3). For more than one, put commas between them: (2, 3), (1, 4).')
   }
   const [x, y] = node.expressions.map((n) => evaluate(n))
   if (x === null || y === null || !Number.isFinite(x) || !Number.isFinite(y)) {
-    throw new ReadError('Each point needs two numbers, like (2, 3) or (−1/2, 4).')
+    throw new ReadError('Each point needs two numbers, like (2, 3) or (−1/2, 4). For more than one: (2, 3), (1, 4).')
   }
   return { x, y }
 }

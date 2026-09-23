@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { clipLine, parseEquation, readEquations } from './equations.js'
+import { ROW_DEFAULTS, clipLine, parseEquation, readEquations, rowFromParam } from './equations.js'
 import { DEFAULT_SETTINGS, cleanSettings, settingsFromParams, settingsToQuery } from './settings.js'
 
 const line = (text) => {
@@ -81,7 +81,16 @@ describe('equations in the page address', () => {
     const s = cleanSettings({ ...DEFAULT_SETTINGS, equations: ['y=2x+1', '', '(1,2),(3,4)'] })
     const q = settingsToQuery(s)
     expect(q).toBe('eq=y%3D2x%2B1&eq=%281%2C2%29%2C%283%2C4%29')
-    expect(settingsFromParams(new URLSearchParams(q)).equations).toEqual(['y=2x+1', '(1,2),(3,4)'])
+    expect(settingsFromParams(new URLSearchParams(q)).equations.map((r) => r.text)).toEqual(['y=2x+1', '(1,2),(3,4)'])
+  })
+  test('a row keeps its style, and only what differs from the default is written', () => {
+    const row = { text: 'y=2x+1', color: 'red', line: 'dashed', arrows: 'both' }
+    const q = settingsToQuery(cleanSettings({ ...DEFAULT_SETTINGS, equations: [row] }))
+    expect(new URLSearchParams(q).get('eq')).toBe('y=2x+1|color=red|line=dashed')
+    expect(settingsFromParams(new URLSearchParams(q)).equations).toEqual([row])
+  })
+  test('unknown styles fall back to the defaults', () => {
+    expect(rowFromParam('(1,2)|color=plaid|arrows=left')).toEqual({ ...ROW_DEFAULTS, text: '(1,2)', arrows: 'left' })
   })
   test('no rows, no eq', () => expect(settingsToQuery(cleanSettings(DEFAULT_SETTINGS))).toBe(''))
 })

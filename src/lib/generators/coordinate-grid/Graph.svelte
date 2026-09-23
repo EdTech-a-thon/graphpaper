@@ -52,11 +52,11 @@
     />
   </g>
 
-  <g stroke={INK} stroke-width="2.5" stroke-linecap="butt">
-    {#each g.lines as l}<line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />{/each}
-  </g>
-  {#each g.lines as l}{#each l.heads as d}<path {d} fill={INK} />{/each}{/each}
-  {#each g.dots as d}<circle cx={d.x} cy={d.y} r="4.5" fill={INK} />{/each}
+  {#each g.lines as l}
+    <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} stroke-width={l.width} stroke-dasharray={l.dash} stroke-linecap={l.cap} />
+    {#each l.heads as d}<path {d} fill={l.color} />{/each}
+  {/each}
+  {#each g.dots as d}<circle cx={d.x} cy={d.y} r="4.5" fill={d.color} />{/each}
 
   <g font-family={SANS} font-size={g.fs} font-weight="bold" fill={INK} stroke="#fff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">
     {#each g.numbers as n}<text x={n.x} y={n.y} text-anchor={n.anchor}>{n.text}</text>{/each}
