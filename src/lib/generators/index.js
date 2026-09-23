@@ -1,4 +1,4 @@
-// Every generator on the site. The directory, the top bar search, page titles
+// Every generator on the site. The directory and its search, page titles
 // and the sitemap all read this list, so adding a generator means adding its
 // folder and one entry here.
 

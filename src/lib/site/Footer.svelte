@@ -1,12 +1,8 @@
-<!-- The teacher.dev footer, shared with the other teacher.dev tools so the
-     whole set feels like one project. -->
+<!-- The footer on the directory and the site's other pages; generators go
+     without one so the figure gets the whole window. -->
 <footer class="no-print">
-  <a class="built" href="https://teacher.dev" target="_blank" rel="noopener noreferrer">
-    <img src="/logo.svg" alt="" width="24" height="24" />
-    Built by teacher.dev
-  </a>
-  <a href="/about">about</a>
-  <a href="/privacy">privacy</a>
+  <a href="/about">About</a>
+  <a href="/privacy">Privacy</a>
 </footer>
 
 <style>
@@ -22,5 +18,4 @@
   }
   a { color: var(--muted); text-decoration: none; }
   a:hover { color: var(--blue-dark); }
-  .built { display: inline-flex; align-items: center; gap: 0.5rem; }
 </style>

@@ -25,10 +25,19 @@
 
 * { box-sizing: border-box; }
 
+/* A faint sheet of graph paper behind every page: thin lines every 24px,
+   slightly stronger ones every 120px. */
 body {
   margin: 0;
-  background: var(--bg);
   min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, rgb(37 99 235 / 7%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 99 235 / 7%) 1px, transparent 1px),
+    linear-gradient(to right, rgb(37 99 235 / 3.5%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 99 235 / 3.5%) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+  background-position: -1px -1px;
 }
 
 h1, h2, h3 { margin: 0; line-height: 1.2; }

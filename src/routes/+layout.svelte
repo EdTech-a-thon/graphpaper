@@ -1,6 +1,6 @@
 <script>
-  // Every page: the top bar, the page, then the footer (generators show the
-  // footer beside their figure instead), plus the Help and request dialogs.
+  // Every page: the top bar, the page, then the footer (generators go without,
+  // so the figure gets the whole window), plus the Help and request dialogs.
   import '../app.css'
   import { page } from '$app/state'
   import { findGenerator } from '$lib/generators/index.js'

@@ -7,7 +7,6 @@
   import { Heading, MoveRight, MoveUp } from '@lucide/svelte'
   import { replaceState } from '$app/navigation'
   import { page } from '$app/state'
-  import Footer from '$lib/site/Footer.svelte'
   import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
@@ -148,7 +147,6 @@
       <FigureCanvas {svg} {filename} {history}>
         <Graph settings={clean} bind:svg />
       </FigureCanvas>
-      <Footer />
     </div>
   </div>
 </div>
@@ -159,7 +157,7 @@
 </div>
 
 <style>
-  .page { max-width: 76rem; margin: 0 auto; padding: 1.25rem 1.25rem 1rem; }
+  .page { padding: 1.25rem 1.25rem 1rem; }
 
   .layout { display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
   @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
@@ -172,11 +170,11 @@
   /* Wide screens: the page fills the window exactly. The settings column
      scrolls on its own; the graph shrinks to fit beside it. */
   @media (min-width: 861px) and (min-height: 560px) {
-    .page { height: calc(100dvh - var(--topbar-h)); display: flex; flex-direction: column; padding-bottom: 0; }
+    .page { height: calc(100dvh - var(--topbar-h)); display: flex; flex-direction: column; }
     .layout { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
     .controls {
       min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
-      margin: 0 -0.75rem; padding: 0 0.75rem 1.25rem;
+      margin: 0 -0.75rem -1rem; padding: 0 0.75rem 1.25rem;
     }
     .preview { display: flex; flex-direction: column; min-height: 0; }
   }
@@ -192,7 +190,6 @@
   .ends { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
   .ends .field { margin-bottom: 0; }
 
-  .preview :global(footer) { padding: 1rem 0 1.25rem; }
 
   .print-sheet { display: none; }
   @media print {

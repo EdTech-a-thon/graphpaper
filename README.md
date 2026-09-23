@@ -15,9 +15,11 @@ and `docs/adr/` for decisions.
   image, PNG/SVG download and copy link.
 - `/about`, `/privacy`, `/sitemap.xml`, `/robots.txt`
 
-Every page has the top bar: the site name, the current generator, and a search
-box that lists the generators and ends with **Request a generator**. The help
-button in the corner opens the same kind of email dialog.
+Every page has the top bar: the site name, the current generator, and a
+"Built by teacher.dev" link. The directory's search box filters its cards as
+you type, and its last card is **Request a generator**. Generators fill the
+window with no footer. The help button in the corner opens the same kind of
+email dialog.
 
 A generator's settings live in the page address, so a link opens the same
 figure, and the server renders that figure on first load (see ADR 0001).
@@ -27,7 +29,7 @@ Saved presets stay in the browser's localStorage.
 
 ```
 src/routes/            SvelteKit pages
-src/lib/site/          top bar, search, directory dialogs, Help, footer, SEO
+src/lib/site/          top bar, directory dialogs, Help, footer, SEO
 src/lib/shared/        pieces every generator uses: figure card and toolbar,
                        undo history, presets, dialogs, fields, end-cap picker
 src/lib/generators/    index.js lists every generator; one folder each
