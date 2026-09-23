@@ -1,0 +1,51 @@
+# Math Figures
+
+Math Figures (mathfigures.com) is a directory of generators that make clean,
+printable math figures for teachers to paste into tests, worksheets and
+slides. It is a teacher.dev project.
+
+## Language
+
+### The directory
+
+**Figure**:
+A finished math picture a teacher puts in front of students, such as a coordinate grid or a number line.
+_Avoid_: Graphic, image, visual, resource
+
+**Generator**:
+A page that makes one kind of figure from a teacher's settings, named "<Figure> Generator".
+_Avoid_: Maker, tool, builder, app
+
+**Directory**:
+The home page, which lists every generator with a live preview of its figure.
+_Avoid_: Catalog, gallery, index
+
+**Generator request**:
+A teacher asking for a kind of figure that no generator makes yet.
+_Avoid_: Feature request, suggestion
+
+### Coordinate grids
+
+**Coordinate Grid**:
+A figure of square blocks with an x-axis and a y-axis, for plotting points and lines. Its generator is the Coordinate Grid Generator.
+_Avoid_: Graph, graph paper, coordinate plane (fine as search words, not as the name)
+
+**Chart title**:
+The title across the top of a figure.
+_Avoid_: Title (alone), heading
+
+**Axis title**:
+Text that runs along an axis to say what it measures, such as "Time (hours)". It can be written text or a blank line for students.
+_Avoid_: Axis label, axis name
+
+**Axis label**:
+The short name at an axis's arrow tip, such as x or y.
+_Avoid_: Axis title, variable
+
+**End cap**:
+How one end of an axis finishes: a triangle arrow, a line arrow, a circle or nothing.
+_Avoid_: Arrow (alone), arrowhead, tip
+
+**Preset**:
+A named set of settings for one generator, either built in or saved by the teacher in their browser.
+_Avoid_: Template, favorite
