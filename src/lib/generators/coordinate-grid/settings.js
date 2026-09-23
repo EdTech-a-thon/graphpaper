@@ -6,7 +6,7 @@
 
 import { CAPS } from '$lib/shared/caps.js'
 import { parseNumber } from '$lib/shared/math.js'
-import { NUMBERINGS, fmt, niceText } from '$lib/shared/numbering.js'
+import { fmt, niceText, numberingOf } from '$lib/shared/numbering.js'
 
 export { CAPS, fmt }
 
@@ -25,8 +25,6 @@ export const DEFAULT_SETTINGS = {
   yStep: '1',
   xEvery: 1,
   yEvery: 1,
-  xNumbering: 'decimal',
-  yNumbering: 'decimal',
   title: '',
   titleMode: 'none',
   xTitle: '', // runs along the axis, e.g. "Time (hours)"
@@ -73,6 +71,8 @@ function upgrade(s) {
   if (s.arrows === false && CAP_KEYS.every((k) => s[k] === undefined)) for (const k of CAP_KEYS) out[k] = 'none'
   delete out.arrows
   delete out.light
+  delete out.xNumbering // now follows how the range is typed
+  delete out.yNumbering
   return out
 }
 
@@ -83,7 +83,6 @@ const plain = (v) => String(Number(v.toFixed(10)))
 export function cleanSettings(s) {
   s = upgrade(s)
   const d = DEFAULT_SETTINGS
-  const numbering = (v) => (v in NUMBERINGS ? v : 'decimal')
   return {
     ...d,
     ...s,
@@ -95,8 +94,6 @@ export function cleanSettings(s) {
     yStep: text(s.yStep, d.yStep),
     xEvery: EVERY.includes(Number(s.xEvery)) ? Number(s.xEvery) : 1,
     yEvery: EVERY.includes(Number(s.yEvery)) ? Number(s.yEvery) : 1,
-    xNumbering: numbering(s.xNumbering),
-    yNumbering: numbering(s.yNumbering),
     title: String(s.title ?? ''),
     xTitle: String(s.xTitle ?? ''),
     yTitle: String(s.yTitle ?? ''),
@@ -149,10 +146,10 @@ export function settingsFromParams(params) {
 }
 
 /**
- * Each axis's range as numbers, and anything the teacher should fix, as
+ * Each axis's range as numbers, how to write them, and anything the teacher should fix, as
  * messages for the settings panel. An axis whose range can't be used falls
  * back to 0 to 15 by 1, so there is always a figure.
- * @returns {{ x: { start: number, step: number, blocks: number }, y: { start: number, step: number, blocks: number }, problems: Record<string, string | null> }}
+ * @returns {{ x: { start: number, step: number, blocks: number, numbering: string }, y: { start: number, step: number, blocks: number, numbering: string }, problems: Record<string, string | null> }}
  */
 export function readAxes(s) {
   const problems = {}
@@ -162,7 +159,8 @@ export function readAxes(s) {
     const from = parseNumber(s[key('From')])
     const to = parseNumber(s[key('To')])
     const step = parseNumber(s[key('Step')])
-    const n = (v) => niceText(v, s[key('Numbering')])
+    const numbering = numberingOf(s[key('From')], s[key('To')], s[key('Step')])
+    const n = (v) => niceText(v, numbering)
     const p = { From: null, To: null, Step: null }
     if (from === null) p.From = 'Type a number, like −10, 2.5, 1/2 or −2π.'
     if (to === null) p.To = 'Type a number, like 10, 2.5, 1/2 or 2π.'
@@ -177,7 +175,7 @@ export function readAxes(s) {
       else if (Math.abs(exact - Math.round(exact)) > 1e-9) p.To = `Counting by ${n(step)} from ${n(from)} doesn't land on ${n(to)}, so the grid runs on to ${n(from + blocks * step)}.`
     }
     const ok = !p.From && !(p.To && !p.To.startsWith('Counting')) && !p.Step
-    out[axis] = ok ? { start: from, step, blocks } : { start: 0, step: 1, blocks: 15 }
+    out[axis] = ok ? { start: from, step, blocks, numbering } : { start: 0, step: 1, blocks: 15, numbering: 'decimal' }
     for (const [k, v] of Object.entries(p)) problems[key(k)] = v
   }
   return { ...out, problems }

@@ -8,8 +8,11 @@ import { readLine } from './settings.js'
 export const LINE = 600
 const FS = 16 // number font size
 const PAD = 16
-const EXT = 22 // how far the axis runs past its last tick where it ends in a cap
-const ARROW = 11 // how much of that end the arrowhead covers
+const EXT = 22 // how far the line runs past its last tick, to its arrow
+const RAY_EXT = 46 // the same where the graph runs off that end, to fit its arrow too
+const RAY_GAP = 15 // from the line's arrow tip back to the graph's
+const RAY_HEAD = 17 // length of the graph's arrowhead
+const RAY_HALF = 9 // half its width
 const TICK = 9 // half height of a numbered tick
 const MINOR = 5 // half height of the ticks between numbers
 const R = 6.5 // endpoint circle radius
@@ -19,7 +22,7 @@ const EPS = 1e-9
 const labelWidth = (l) => (l.text ?? (l.num.length > l.den.length ? l.num : l.den) + l.sign).length * CHAR
 
 export function buildLine(s) {
-  const { range, set, variable, problems } = readLine(s)
+  const { range, numbering, endpointNumbering, set, problems } = readLine(s)
   const { from, to, step } = range
   const x = (v) => L + ((v - from) / (to - from)) * LINE
 
@@ -33,12 +36,11 @@ export function buildLine(s) {
   for (let i = 0; i <= count; i++) {
     const v = from + i * step
     const numbered = !!s.every && (i - ref) % s.every === 0
-    ticks.push({ v, major: numbered || !s.every, label: numbered ? numberLabel(v, s.numbering) : null })
+    ticks.push({ v, major: numbered || !s.every, label: numbered ? numberLabel(v, numbering) : null })
   }
 
-  // The inequality graph, clipped to the line. A part running off an end goes
-  // on to that end, stopping short of an arrowhead so the arrow shows.
-  const graph = s.showGraph && set ? set : []
+  // The inequality graph, clipped to the line.
+  const graph = set ?? []
   const endpoints = new Map() // value -> closed; an endpoint shared by two parts is drawn once
   for (const { lo, hi } of graph) {
     for (const b of [lo, hi]) {
@@ -46,9 +48,10 @@ export function buildLine(s) {
     }
   }
   // An endpoint without a number under it gets one above it, clear of the tick
-  // numbers, so the figure is never ambiguous.
+  // numbers, so the figure is never ambiguous. It's written the way the
+  // inequality was typed, so x < π/2 is labeled π/2.
   const onNumber = (v) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
-  const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, s.numbering) }))
+  const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, endpointNumbering) }))
 
   const labels = ticks.filter((t) => t.label)
   const stacked = labels.some((l) => l.label.den)
@@ -56,30 +59,33 @@ export function buildLine(s) {
   const aboveH = extraLabels.length ? (extraStacked ? FS * 2.3 : FS) + 8 : 0
   const numbersH = labels.length ? (stacked ? FS * 2.3 : FS) + 6 : 0
 
-  const title = s.titleMode === 'text' ? s.title.trim() : ''
-  const titleBlank = s.titleMode === 'blank'
-  const tip = s.labelMode === 'text' ? s.label.trim() || variable || 'x' : ''
-  const TIP_CHAR = FS * 0.75
-  const extL = s.startCap === 'none' ? 0 : EXT
-  const extR = s.endCap === 'none' ? 0 : EXT
+  // A part of the graph that runs off an end has its own arrow there, before
+  // the line's arrow, so the line runs on further at that end to fit both.
+  const parts = graph.filter(({ lo, hi }) => lo.v !== hi.v && hi.v >= from - EPS && lo.v <= to + EPS)
+  const rayL = parts.some(({ lo }) => lo.v < from - EPS)
+  const rayR = parts.some(({ hi }) => hi.v > to + EPS)
+  const extL = rayL ? RAY_EXT : EXT
+  const extR = rayR ? RAY_EXT : EXT
 
   const first = labels.find((l) => Math.abs(l.v - from) < EPS * Math.max(1, Math.abs(from)))
   const last = labels.find((l) => Math.abs(l.v - to) < EPS * Math.max(1, Math.abs(to)))
   const L = PAD + Math.max(extL, first ? labelWidth(first.label) / 2 : 0)
-  const Rt = PAD + Math.max(last ? labelWidth(last.label) / 2 : 0, extR + (tip ? tip.length * TIP_CHAR + 8 : 0))
-  const T = PAD + (title || titleBlank ? FS * 1.6 + 22 : 0) + aboveH + Math.max(TICK, R + 2)
+  const Rt = PAD + Math.max(extR, last ? labelWidth(last.label) / 2 : 0)
+  const T = PAD + aboveH + Math.max(TICK, R + 2)
   const axisY = T
   const height = axisY + TICK + 6 + numbersH + PAD
   const width = L + LINE + Rt
 
   const ends = { left: L - extL, right: L + LINE + extR }
+  const tips = { left: ends.left + RAY_GAP, right: ends.right - RAY_GAP }
   const segments = []
-  for (const { lo, hi } of graph) {
-    if (lo.v === hi.v || hi.v < from - EPS || lo.v > to + EPS) continue
-    const x1 = lo.v < from - EPS ? ends.left + (s.startCap === 'triangle' || s.startCap === 'line' ? ARROW : 0) : x(lo.v)
-    const x2 = hi.v > to + EPS ? ends.right - (s.endCap === 'triangle' || s.endCap === 'line' ? ARROW : 0) : x(hi.v)
+  for (const { lo, hi } of parts) {
+    const x1 = lo.v < from - EPS ? tips.left + RAY_HEAD - 1 : x(lo.v)
+    const x2 = hi.v > to + EPS ? tips.right - RAY_HEAD + 1 : x(hi.v)
     if (x2 > x1) segments.push({ x1, x2 })
   }
+  const arrow = (tip, dir) => `M${tip},${axisY} L${tip - dir * RAY_HEAD},${axisY - RAY_HALF} L${tip - dir * RAY_HEAD},${axisY + RAY_HALF} z`
+  const arrows = [rayL && arrow(tips.left, -1), rayR && arrow(tips.right, 1)].filter(Boolean)
 
   // Numbers sit in a row starting at `top`; a row with any stacked fraction is taller.
   const row = (list, top, tall) =>
@@ -93,9 +99,6 @@ export function buildLine(s) {
     ...row(extraLabels, axisY - Math.max(TICK, R + 2) - aboveH + 2, extraStacked),
   ]
 
-  const titleY = PAD + FS * 1.6
-  const midX = L + LINE / 2
-
   return {
     width,
     height,
@@ -105,10 +108,8 @@ export function buildLine(s) {
     ticks: ticks.map((t) => ({ x: x(t.v), y1: axisY - (t.major ? TICK : MINOR), y2: axisY + (t.major ? TICK : MINOR) })),
     numbers,
     segments,
+    arrows,
     endpoints: [...endpoints].map(([v, closed]) => ({ x: x(v), closed })),
-    title: title ? { x: midX, y: titleY, text: title } : null,
-    titleBlank: titleBlank ? { x1: midX - 130, x2: midX + 130, y: titleY } : null,
-    tip: tip ? { x: ends.right + 6, y: axisY + FS * 0.45, text: tip } : null,
     problems,
   }
 }

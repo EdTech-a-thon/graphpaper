@@ -47,7 +47,7 @@ How one end of an axis finishes: a triangle arrow, a line arrow, a circle or not
 _Avoid_: Arrow (alone), arrowhead, tip
 
 **Preset**:
-A named set of settings for one generator, either built in or saved by the teacher in their browser.
+A named set of settings for one generator, saved by the teacher in their browser. None are built in.
 _Avoid_: Template, favorite
 
 **Range**:
@@ -55,7 +55,7 @@ The stretch of numbers an axis covers, set as From, To and Step (such as −2 to
 _Avoid_: Domain, interval, window, start and blocks
 
 **Numbering**:
-How the numbers under the ticks are written: decimals, fractions or multiples of π.
+How the numbers under the ticks are written: decimals, fractions or multiples of π. It isn't a setting; it follows how the teacher typed the range, so a range typed with π is numbered in π.
 _Avoid_: Format, label style
 
 ### Number lines
@@ -73,7 +73,7 @@ A short mark across a number line at every step of its range. Numbered ticks are
 _Avoid_: Notch, hash mark, gridline
 
 **Inequality graph**:
-The thick line, arrows and endpoints drawn over a number line to show which numbers make its inequality true. A teacher can hide it to print the blank line with the same settings, as the question beside its answer key.
+The thick line, arrows and endpoints drawn over a number line to show which numbers make its inequality true. Where it runs off an end it has its own arrow, just inside the number line's arrow.
 _Avoid_: Shading, solution, plot
 
 **Endpoint**:

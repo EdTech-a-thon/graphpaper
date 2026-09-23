@@ -37,8 +37,8 @@ export function buildGraph(settings) {
   const yAxisInside = x0 < 0 && x1 > 0
   const xAxisInside = y0 < 0 && y1 > 0
 
-  const xTicks = ticks(s.xBlocks, s.xStep, x0, s.xEvery, s.xNumbering)
-  const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery, s.yNumbering)
+  const xTicks = ticks(s.xBlocks, s.xStep, x0, s.xEvery, x.numbering)
+  const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery, y.numbering)
   // An axis runs a little past the grid wherever it ends in a cap.
   const extL = s.xStartCap === 'none' ? 0 : EXT
   const extR = s.xEndCap === 'none' ? 0 : EXT

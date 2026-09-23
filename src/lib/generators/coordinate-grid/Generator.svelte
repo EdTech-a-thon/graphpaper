@@ -11,12 +11,12 @@
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
   import MathInput from '$lib/shared/MathInput.svelte'
-  import { NUMBERINGS, niceText } from '$lib/shared/numbering.js'
+  import { niceText } from '$lib/shared/numbering.js'
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
   import Graph from './Graph.svelte'
-  import { BUILT_IN_PRESETS, presetStore } from './presets.js'
+  import { presetStore } from './presets.js'
   import { CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(page.url.searchParams))
@@ -66,9 +66,9 @@
     ['Step', 'Count by'],
   ]
   function axisSummary(axis) {
-    const { start, step, blocks } = axes[axis]
+    const { start, step, blocks, numbering } = axes[axis]
     const every = clean[`${axis}Every`]
-    const n = (v) => niceText(v, clean[`${axis}Numbering`])
+    const n = (v) => niceText(v, numbering)
     return [
       `${n(start)} to ${n(start + blocks * step)}`,
       `by ${n(step)}`,
@@ -107,7 +107,7 @@
     <div class="controls">
       <section class="card">
         <h2 class="card-head">Presets</h2>
-        <Presets builtIns={BUILT_IN_PRESETS} store={presetStore} same={sameGraph} settings={clean} onapply={applyPreset} />
+        <Presets store={presetStore} same={sameGraph} settings={clean} onapply={applyPreset} />
       </section>
 
       <section class="card sections">
@@ -133,20 +133,12 @@
             {#each RANGE_FIELDS as [key]}
               {#if axes.problems[`${axis}${key}`]}<p class="help problem">{axes.problems[`${axis}${key}`]}</p>{/if}
             {/each}
-            <div class="pair">
-              <label class="field">
-                Numbers
-                <select bind:value={settings[`${axis}Every`]}>
-                  {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
-                </select>
-              </label>
-              <label class="field">
-                Write numbers as
-                <select bind:value={settings[`${axis}Numbering`]}>
-                  {#each Object.entries(NUMBERINGS) as [v, label]}<option value={v}>{label}</option>{/each}
-                </select>
-              </label>
-            </div>
+            <label class="field">
+              Numbers
+              <select bind:value={settings[`${axis}Every`]}>
+                {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
+              </select>
+            </label>
             <div class="field">
               <span>Label <span class="hint">at the {axis === 'x' ? 'right' : 'top'} end</span></span>
               <LabelField
@@ -213,7 +205,6 @@
   .range-field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; min-width: 0; }
   .grid-fields ~ .help { margin: -0.3rem 0 0.75rem; font-size: 0.84rem; }
   .help.problem { color: var(--red); font-weight: 600; }
-  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
   .field:last-child { margin-bottom: 0; }
   .field .hint { font-weight: 400; color: var(--muted); }

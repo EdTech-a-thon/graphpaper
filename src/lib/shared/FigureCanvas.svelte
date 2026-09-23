@@ -3,7 +3,7 @@
   // the figure out (copy, download, link) and undo/redo, above the figure
   // itself. `svg` is the rendered figure to export; `history` comes from
   // createHistory. Status messages appear as a toast over the figure.
-  import { Copy, FileDown, ImageDown, Link, Redo2, Undo2 } from '@lucide/svelte'
+  import { Copy, FileDown, ImageDown, Redo2, Share, Undo2 } from '@lucide/svelte'
   import { copyPng, downloadPng, downloadSvg } from './exporting.js'
 
   let { svg, filename, history, children } = $props()
@@ -41,7 +41,7 @@
     <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
     <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
     <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
-    <button class="icon-btn" aria-label="Share link" data-tip="Share link" onclick={shareLink}><Link size={19} /></button>
+    <button class="icon-btn" aria-label="Share link" data-tip="Share link" onclick={shareLink}><Share size={19} /></button>
     <span class="divider"></span>
     <button class="icon-btn" aria-label="Undo" data-tip="Undo" disabled={!history.canUndo} onclick={history.undo}><Undo2 size={19} /></button>
     <button class="icon-btn" aria-label="Redo" data-tip="Redo" disabled={!history.canRedo} onclick={history.redo}><Redo2 size={19} /></button>

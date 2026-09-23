@@ -35,6 +35,7 @@ describe('readAxes', () => {
     const { x } = readAxes(cleanSettings({ ...DEFAULT_SETTINGS, xFrom: '0', xTo: '2pi', xStep: 'pi/4' }))
     expect(x.blocks).toBe(8)
     expect(x.step).toBeCloseTo(Math.PI / 4)
+    expect(x.numbering).toBe('pi')
   })
 
   test('a range that the step does not land on runs on, and says so', () => {
@@ -45,7 +46,7 @@ describe('readAxes', () => {
 
   test('an unusable range falls back and explains', () => {
     const r = readAxes(cleanSettings({ ...DEFAULT_SETTINGS, yFrom: '5', yTo: '1' }))
-    expect(r.y).toEqual({ start: 0, step: 1, blocks: 15 })
+    expect(r.y).toEqual({ start: 0, step: 1, blocks: 15, numbering: 'decimal' })
     expect(r.problems.yTo).toMatch(/end after it starts/)
   })
 })

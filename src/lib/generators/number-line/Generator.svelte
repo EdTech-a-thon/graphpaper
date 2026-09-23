@@ -1,22 +1,20 @@
 <script>
-  // The Number Line Generator: presets, the inequality and collapsed settings on
-  // the left, the figure card on the right. Settings are mirrored into the page
+  // The Number Line Generator: presets, the inequality and the line's settings
+  // on the left, the figure card on the right. Settings are mirrored into the page
   // address so a bookmark or shared link brings back exactly this number line,
   // and the server renders that same line on first load.
-  import { Heading, MoveHorizontal, Ruler } from '@lucide/svelte'
+  import { Ruler } from '@lucide/svelte'
   import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
-  import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
-  import LabelField from '$lib/shared/LabelField.svelte'
   import MathInput from '$lib/shared/MathInput.svelte'
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
-  import { NUMBERINGS, niceText } from '$lib/shared/numbering.js'
+  import { niceText } from '$lib/shared/numbering.js'
   import NumberLine from './NumberLine.svelte'
-  import { BUILT_IN_PRESETS, presetStore } from './presets.js'
-  import { CAPS, cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery } from './settings.js'
+  import { presetStore } from './presets.js'
+  import { cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(page.url.searchParams))
   const clean = $derived(cleanSettings(settings))
@@ -56,33 +54,20 @@
 
   const lineSummary = $derived.by(() => {
     const { from, to, step } = line.range
-    const n = (v) => niceText(v, clean.numbering)
+    const n = (v) => niceText(v, line.numbering)
     return [
       `${n(from)} to ${n(to)}`,
       `by ${n(step)}`,
       clean.every ? (clean.every === 1 ? 'numbered' : `numbered every ${clean.every}`) : 'unnumbered',
-      NUMBERINGS[clean.numbering].toLowerCase(),
     ].join(' · ')
   })
-  const endsSummary = $derived.by(() => {
-    const { startCap: a, endCap: b } = clean
-    const caps = a === b ? (a === 'none' ? 'plain ends' : `${CAPS[a].toLowerCase()}s`) : `${CAPS[a].toLowerCase()} / ${CAPS[b].toLowerCase()}`
-    const label = clean.labelMode === 'text' ? `“${clean.label.trim() || line.variable || 'x'}”` : 'no label'
-    return `${caps} · ${label}`
-  })
-  const titleSummary = $derived(
-    clean.titleMode === 'blank' ? 'Blank line' : clean.titleMode === 'text' && clean.title.trim() ? `“${clean.title.trim()}”` : 'None',
-  )
 
   function applyPreset(preset) {
-    settings = { ...$state.snapshot(preset), showGraph: clean.showGraph }
+    settings = $state.snapshot(preset)
   }
 
   let svg = $state()
-  const filename = $derived(
-    (clean.titleMode === 'text' && clean.title.trim() ? clean.title.trim() : 'number-line')
-      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'number-line',
-  )
+  const filename = 'number-line'
 </script>
 
 <div class="page no-print">
@@ -91,12 +76,12 @@
     <div class="controls">
       <section class="card">
         <h2 class="card-head">Presets</h2>
-        <Presets builtIns={BUILT_IN_PRESETS} store={presetStore} same={sameFigure} settings={clean} onapply={applyPreset} />
+        <Presets store={presetStore} same={sameFigure} settings={clean} onapply={applyPreset} />
       </section>
 
       <section class="card inequality">
         <div class="field">
-          <label class="card-head flush" for="inequality">Inequality <span class="hint">leave empty for a blank line</span></label>
+          <label class="card-head flush" for="inequality">Inequality</label>
           <MathInput
             kind="inequality"
             id="inequality"
@@ -109,17 +94,9 @@
         <p id="inequality-help" class="help" class:problem={line.problems.inequality}>
           {line.problems.inequality ?? 'Try x < −1 or x ≥ 3, x ≠ 2, all real numbers or no solution. Type <= for ≤, != for ≠, pi for π and / for a fraction.'}
         </p>
-        <div class="graph-row">
-          <label class="check"><input type="checkbox" bind:checked={settings.showGraph} /> Show the graph</label>
-          <label class="color">Color <input type="color" bind:value={settings.graphColor} /></label>
-        </div>
       </section>
 
       <section class="card sections">
-        <Section title="Title" icon={Heading} summary={titleSummary}>
-          <LabelField name="Chart title" placeholder="Graph the solution" bind:mode={settings.titleMode} bind:text={settings.title} />
-        </Section>
-
         <Section title="Line" icon={Ruler} summary={lineSummary}>
           <div class="range-fields">
             {#each RANGE_FIELDS as [key, name]}
@@ -138,35 +115,6 @@
               {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
             </select>
           </label>
-          <label class="field">
-            Write numbers as
-            <select bind:value={settings.numbering}>
-              {#each Object.entries(NUMBERINGS) as [v, label]}<option value={v}>{label}</option>{/each}
-            </select>
-          </label>
-        </Section>
-
-        <Section title="Ends" icon={MoveHorizontal} summary={endsSummary}>
-          <div class="field">
-            <span>Label <span class="hint">at the right end</span></span>
-            <LabelField
-              name="Number line label"
-              placeholder={line.variable ?? 'x'}
-              blank={false}
-              bind:mode={settings.labelMode}
-              bind:text={settings.label}
-            />
-          </div>
-          <div class="ends">
-            <div class="field">
-              <span>Left end</span>
-              <CapPicker options={CAPS} label="Left end" direction="left" bind:value={settings.startCap} />
-            </div>
-            <div class="field">
-              <span>Right end</span>
-              <CapPicker options={CAPS} label="Right end" direction="right" bind:value={settings.endCap} />
-            </div>
-          </div>
         </Section>
       </section>
     </div>
@@ -205,15 +153,11 @@
   .card-head { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 1rem 1.1rem 0; }
   .card-head + :global(.presets) { padding-top: 0.6rem; }
   .card-head.flush { padding: 0; }
-  .card-head .hint { text-transform: none; letter-spacing: 0; font-weight: 500; }
   .sections { overflow: hidden; }
 
   .inequality { padding: 1rem 1.1rem; }
   .help { margin: 0.45rem 0 0; font-size: 0.84rem; color: var(--muted); }
   .help.problem { color: var(--red); font-weight: 600; }
-  .graph-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; font-weight: 600; font-size: 0.88rem; }
-  .check, .color { display: flex; align-items: center; gap: 0.45rem; cursor: pointer; }
-  .color input { width: 2.2rem; height: 1.8rem; padding: 0; border: 1.5px solid var(--border); border-radius: 8px; background: none; cursor: pointer; }
 
   .range-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
   .range-field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; min-width: 0; }
@@ -221,9 +165,6 @@
   .range-fields ~ .help { margin: -0.3rem 0 0.75rem; }
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
   .field:last-child { margin-bottom: 0; }
-  .field .hint { font-weight: 400; color: var(--muted); }
-  .ends { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-  .ends .field { margin-bottom: 0; }
 
   .print-sheet { display: none; }
   @media print {

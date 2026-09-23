@@ -1,7 +1,16 @@
 // How a tick's number is written: as a decimal, a fraction (stacked, improper) or
 // a multiple of π. A number that has no neat fraction falls back to a decimal.
+//
+// The numbering follows how the teacher typed the range: write π and the
+// numbers are in π, write a fraction and they are fractions.
 
-export const NUMBERINGS = { decimal: 'Decimals', fraction: 'Fractions', pi: 'Multiples of π' }
+/** The numbering for a range typed as these texts ("0", "2pi", "pi/4"). */
+export function numberingOf(...texts) {
+  const typed = texts.join(' ')
+  if (/pi|π/i.test(typed)) return 'pi'
+  if (typed.includes('/')) return 'fraction'
+  return 'decimal'
+}
 
 const MAX_DENOMINATOR = 100
 

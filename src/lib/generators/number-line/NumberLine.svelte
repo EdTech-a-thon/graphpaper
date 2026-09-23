@@ -7,9 +7,7 @@
   let { settings, svg = $bindable(), id = 'n' } = $props()
 
   const g = $derived(buildLine(settings))
-  const cap = (c) => (c === 'none' ? undefined : `url(#${id}-${c})`)
   const SANS = 'Arial, Helvetica, sans-serif'
-  const SERIF = "'Times New Roman', Times, serif"
 </script>
 
 <svg
@@ -19,18 +17,12 @@
   width={g.width}
   height={g.height}
   role="img"
-  aria-label={settings.title || (settings.showGraph && settings.inequality) || 'Number line'}
+  aria-label={settings.inequality || 'Number line'}
 >
   <defs>
-    <!-- Axis end caps; the axis runs from its start (left) to its end (right). -->
-    <marker id="{id}-triangle" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+    <!-- The line's arrows, one at each end. -->
+    <marker id="{id}-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill={INK} />
-    </marker>
-    <marker id="{id}-line" viewBox="0 0 10 10" refX="8.6" refY="5" markerWidth="13" markerHeight="13" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-      <path d="M1.5,1 L8.6,5 L1.5,9" fill="none" stroke={INK} stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-    </marker>
-    <marker id="{id}-circle" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse">
-      <circle cx="5" cy="5" r="5" fill={INK} />
     </marker>
   </defs>
 
@@ -38,17 +30,18 @@
 
   <line
     x1={g.axis.x1} y1={g.axis.y} x2={g.axis.x2} y2={g.axis.y} stroke={INK} stroke-width="2.4"
-    marker-start={cap(settings.startCap)} marker-end={cap(settings.endCap)}
+    marker-start="url(#{id}-arrow)" marker-end="url(#{id}-arrow)"
   />
   <g stroke={INK} stroke-width="2">
     {#each g.ticks as t}<line x1={t.x} y1={t.y1} x2={t.x} y2={t.y2} />{/each}
   </g>
 
-  <g stroke={settings.graphColor} stroke-width="6">
+  <g stroke={INK} stroke-width="6">
     {#each g.segments as s}<line x1={s.x1} y1={g.axis.y} x2={s.x2} y2={g.axis.y} />{/each}
   </g>
+  {#each g.arrows as d}<path {d} fill={INK} />{/each}
   {#each g.endpoints as e}
-    <circle cx={e.x} cy={g.axis.y} r={g.r} fill={e.closed ? settings.graphColor : '#fff'} stroke={settings.graphColor} stroke-width="2.5" />
+    <circle cx={e.x} cy={g.axis.y} r={g.r} fill={e.closed ? INK : '#fff'} stroke={INK} stroke-width="2.5" />
   {/each}
 
   <g font-family={SANS} font-size={g.fs} font-weight="bold" fill={INK} text-anchor="middle">
@@ -66,14 +59,6 @@
     {/each}
   </g>
 
-  {#if g.title}
-    <text x={g.title.x} y={g.title.y} text-anchor="middle" font-family={SANS} font-size={g.fs * 1.6} font-weight="bold" fill={INK}>{g.title.text}</text>
-  {:else if g.titleBlank}
-    <line x1={g.titleBlank.x1} y1={g.titleBlank.y} x2={g.titleBlank.x2} y2={g.titleBlank.y} stroke={INK} stroke-width="1.5" />
-  {/if}
-  {#if g.tip}
-    <text x={g.tip.x} y={g.tip.y} font-family={SERIF} font-style="italic" font-weight="bold" font-size={g.fs * 1.4} fill={INK}>{g.tip.text}</text>
-  {/if}
 </svg>
 
 <style>

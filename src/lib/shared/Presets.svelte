@@ -1,12 +1,12 @@
 <script>
-  // A generator's built-in and saved starting points. The one matching the
-  // current figure is highlighted; saved ones can be deleted, after a
+  // A generator's saved starting points. The one matching the current figure
+  // is highlighted; saved ones can be deleted, after a
   // confirmation. `same(a, b)` says whether two settings draw the same figure.
   import { onMount } from 'svelte'
   import { BookmarkPlus, Check, X } from '@lucide/svelte'
   import Modal from './Modal.svelte'
 
-  let { builtIns, store, same, settings, onapply } = $props()
+  let { store, same, settings, onapply } = $props()
 
   // Saved presets live in this browser, so they load after the page arrives.
   let saved = $state([])
@@ -39,9 +39,6 @@
 
 <div class="presets">
   <div class="chips">
-    {#each builtIns as p}
-      <button class="chip" class:on={same(p.settings, settings)} onclick={() => onapply(p.settings)}>{p.name}</button>
-    {/each}
     {#each saved as p (p.name)}
       <span class="chip saved" class:on={same(p.settings, settings)}>
         <button class="apply" onclick={() => onapply(p.settings)}>{p.name}</button>
