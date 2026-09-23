@@ -43,6 +43,7 @@
       open = true
       active = (active + (event.key === 'ArrowDown' ? 1 : count - 1)) % count
     } else if (event.key === 'Enter') {
+      if (!open) return
       event.preventDefault()
       choose(active)
     } else if (event.key === 'Escape') {

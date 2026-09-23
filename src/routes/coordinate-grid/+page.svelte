@@ -1,10 +1,11 @@
 <script>
+  // The Coordinate Grid Generator's page: its search engine details and the generator.
   import { findGenerator } from '$lib/generators/index.js'
-  import Builder from '$lib/generators/coordinate-grid/Builder.svelte'
+  import Generator from '$lib/generators/coordinate-grid/Generator.svelte'
   import Seo from '$lib/site/Seo.svelte'
 
   const generator = findGenerator('/coordinate-grid')
 </script>
 
 <Seo title={generator.name} description={generator.description} path={generator.path} />
-<Builder />
+<Generator />

@@ -1,11 +1,15 @@
 <script>
+  // Shown for a missing page or an error, with a way back to the directory.
   import { page } from '$app/state'
+  import { SITE_NAME } from '$lib/site/config.js'
+
+  const heading = $derived(page.status === 404 ? 'We couldn’t find that page' : 'Something went wrong')
 </script>
 
-<svelte:head><title>Not found | Math Figures</title></svelte:head>
+<svelte:head><title>{page.status === 404 ? 'Not found' : 'Error'} | {SITE_NAME}</title></svelte:head>
 
 <div class="page">
-  <h1>{page.status === 404 ? 'We couldn’t find that page' : 'Something went wrong'}</h1>
+  <h1>{heading}</h1>
   <p>Try the search box above, or <a href="/">see every figure</a>.</p>
 </div>
 

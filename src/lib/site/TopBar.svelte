@@ -42,8 +42,8 @@
   .home { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--ink); text-decoration: none; font-weight: 800; font-size: 1.1rem; white-space: nowrap; }
   .trail :global(.sep) { color: var(--muted); flex: none; }
   .current { color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Phones keep the site name and drop the generator's name, which the page shows anyway. */
   @media (max-width: 640px) {
     .trail :global(.sep), .current { display: none; }
-    .home span { display: none; }
   }
 </style>

@@ -12,6 +12,6 @@ export const BUILT_IN_PRESETS = [
   },
 ]
 
-const graphOnly = (s) => Object.fromEntries(GRAPH_KEYS.map((k) => [k, s[k]]))
+const figureOnly = (s) => Object.fromEntries(GRAPH_KEYS.map((k) => [k, s[k]]))
 
-export const presetStore = createPresetStore('mathfigures.coordinate-grid.presets', (s) => graphOnly(cleanSettings(s)))
+export const presetStore = createPresetStore('mathfigures.coordinate-grid.presets', (s) => figureOnly(cleanSettings(s)))

@@ -31,7 +31,7 @@
         </a>
       </li>
     {/each}
-    <li>
+    <li class="request-cell">
       <button type="button" class="request" onclick={() => openRequest()}>
         <span class="plus"><Plus size={22} aria-hidden="true" /></span>
         <span class="request-title">Need a different figure?</span>
@@ -48,9 +48,10 @@
   .hero p { margin: 0.6rem 0 0; color: var(--muted); font-size: 1.05rem; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.25rem; margin: 0; padding: 0; list-style: none; }
-  /* With one generator, its card gets the room and the request card sits beside it. */
-  .cards.single { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-  @media (max-width: 760px) { .cards.single { grid-template-columns: minmax(0, 1fr); } }
+  /* A lone generator gets the full width until there are others to sit beside. */
+  .cards.single { grid-template-columns: minmax(0, 1fr); }
+  /* The request card always closes the list, across the full width. */
+  .cards .request-cell { grid-column: 1 / -1; }
   .cards li { display: flex; }
 
   .figure { display: flex; flex-direction: column; width: 100%; overflow: hidden; color: inherit; text-decoration: none; transition: border-color 0.15s, box-shadow 0.15s; }
@@ -69,7 +70,7 @@
     justify-content: center;
     gap: 0.4rem;
     width: 100%;
-    min-height: 14rem;
+    min-height: 9rem;
     padding: 1.5rem;
     border: 2px dashed var(--blue-border);
     border-radius: var(--radius);

@@ -42,8 +42,8 @@
   ]
   // Each axis runs from its start end (left/bottom) to its end end (right/top).
   const AXES = [
-    { axis: 'x', title: 'x-axis', icon: MoveRight, ends: [['Start', 'Left end', 'left'], ['End', 'Right end', 'right']] },
-    { axis: 'y', title: 'y-axis', icon: MoveUp, ends: [['Start', 'Bottom end', 'down'], ['End', 'Top end', 'up']] },
+    { axis: 'x', heading: 'x-axis', icon: MoveRight, ends: [['Start', 'Left end', 'left'], ['End', 'Right end', 'right']] },
+    { axis: 'y', heading: 'y-axis', icon: MoveUp, ends: [['Start', 'Bottom end', 'down'], ['End', 'Top end', 'up']] },
   ]
 
   // Named the way Excel and Sheets name them: a chart title and axis titles.
@@ -83,8 +83,8 @@
 
   let svg = $state()
   const filename = $derived(
-    (clean.titleMode === 'text' && clean.title.trim() ? clean.title.trim() : 'graph')
-      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'graph',
+    (clean.titleMode === 'text' && clean.title.trim() ? clean.title.trim() : 'coordinate-grid')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'coordinate-grid',
   )
 
 </script>
@@ -108,8 +108,8 @@
           {/each}
         </Section>
 
-        {#each AXES as { axis, title, icon, ends }}
-          <Section {title} {icon} summary={axisSummary(axis)}>
+        {#each AXES as { axis, heading, icon, ends }}
+          <Section title={heading} {icon} summary={axisSummary(axis)}>
             <div class="grid-fields">
               <label>Blocks <input type="number" min="1" max={MAX_BLOCKS} bind:value={settings[`${axis}Blocks`]} /></label>
               <label>Start at <input type="number" step="any" bind:value={settings[`${axis}Start`]} /></label>
@@ -124,7 +124,7 @@
             <div class="field">
               <span>Label <span class="hint">at the {axis === 'x' ? 'right' : 'top'} end</span></span>
               <LabelField
-                name="{title} label"
+                name="{heading} label"
                 placeholder={axis}
                 blank={false}
                 bind:mode={settings[`${axis}LabelMode`]}
@@ -135,7 +135,7 @@
               {#each ends as [key, name, direction]}
                 <div class="field">
                   <span>{name}</span>
-                  <CapPicker options={CAPS} label="{title} {name.toLowerCase()}" {direction} bind:value={settings[`${axis}${key}Cap`]} />
+                  <CapPicker options={CAPS} label="{heading} {name.toLowerCase()}" {direction} bind:value={settings[`${axis}${key}Cap`]} />
                 </div>
               {/each}
             </div>
