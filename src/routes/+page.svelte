@@ -55,9 +55,8 @@
 
 <style>
   .page { max-width: 58rem; margin: 0 auto; padding: 2.5rem 1.25rem 1rem; }
-  .hero { max-width: 36rem; }
   h1 { font-size: 1.9rem; font-weight: 800; }
-  .hero p { margin: 0.55rem 0 0; color: var(--muted); font-size: 1.02rem; }
+  .hero p { max-width: 42rem; margin: 0.55rem 0 0; color: var(--muted); font-size: 1.02rem; }
 
   .search { position: relative; max-width: 26rem; margin: 1.5rem 0 1.25rem; }
   .search :global(.glass) { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }

@@ -30,6 +30,8 @@
     read: () => $state.snapshot(clean),
     write: (snap) => (settings = snap),
     keyOf: settingsToQuery,
+    tidy: cleanSettings,
+    storageKey: 'mathfigures.coordinate-grid.history',
   })
 
   const EVERY_OPTIONS = [
