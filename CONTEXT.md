@@ -49,3 +49,25 @@ _Avoid_: Arrow (alone), arrowhead, tip
 **Preset**:
 A named set of settings for one generator, either built in or saved by the teacher in their browser.
 _Avoid_: Template, favorite
+
+**Range**:
+The stretch of numbers an axis covers, set as From, To and Step (such as −2 to 5 by 1). Both the Coordinate Grid and the Number Line use it.
+_Avoid_: Domain, interval, window, start and blocks
+
+**Numbering**:
+How the numbers under the ticks are written: decimals, fractions or multiples of π.
+_Avoid_: Format, label style
+
+### Number lines
+
+**Number Line**:
+A figure of one horizontal axis with evenly spaced ticks, for placing numbers and graphing inequalities in one variable. Its generator is the Number Line Generator.
+_Avoid_: Line graph, ruler
+
+**Inequality**:
+What the teacher types to graph on a number line, such as −2 < x ≤ 5 or x < −1 or x ≥ 3. A number line with no inequality is blank.
+_Avoid_: Solution set, interval, expression
+
+**Endpoint**:
+Where an inequality's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
+_Avoid_: Dot, point, boundary
