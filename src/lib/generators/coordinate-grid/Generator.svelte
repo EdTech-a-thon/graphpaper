@@ -10,16 +10,19 @@
   import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
+  import MathInput from '$lib/shared/MathInput.svelte'
+  import { NUMBERINGS, niceText } from '$lib/shared/numbering.js'
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
   import Graph from './Graph.svelte'
   import { BUILT_IN_PRESETS, presetStore } from './presets.js'
-  import { CAPS, MAX_BLOCKS, cleanSettings, fmt, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
+  import { CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(page.url.searchParams))
   const clean = $derived(cleanSettings(settings))
   const query = $derived(settingsToQuery(clean))
+  const axes = $derived(readAxes(clean))
 
   // The router can't replace the address until the page has hydrated, which
   // matters when a link arrives written differently from how we'd write it.
@@ -57,14 +60,18 @@
     { key: 'xTitle', name: 'x-axis title', placeholder: 'Time (hours)' },
     { key: 'yTitle', name: 'y-axis title', placeholder: 'Distance (km)' },
   ]
+  const RANGE_FIELDS = [
+    ['From', 'From'],
+    ['To', 'To'],
+    ['Step', 'Count by'],
+  ]
   function axisSummary(axis) {
-    const blocks = clean[`${axis}Blocks`]
-    const step = clean[`${axis}Step`]
-    const start = clean[`${axis}Start`]
+    const { start, step, blocks } = axes[axis]
     const every = clean[`${axis}Every`]
+    const n = (v) => niceText(v, clean[`${axis}Numbering`])
     return [
-      `${fmt(start)} to ${fmt(start + blocks * step)}`,
-      `by ${fmt(step)}s`,
+      `${n(start)} to ${n(start + blocks * step)}`,
+      `by ${n(step)}`,
       every ? (every === 1 ? 'numbered' : `numbered every ${every}`) : 'unnumbered',
       clean[`${axis}LabelMode`] === 'text' && clean[`${axis}Label`].trim() ? `“${clean[`${axis}Label`].trim()}”` : 'no label',
       endsSummary(clean[`${axis}StartCap`], clean[`${axis}EndCap`]),
@@ -116,16 +123,30 @@
         {#each AXES as { axis, heading, icon, ends }}
           <Section title={heading} {icon} summary={axisSummary(axis)}>
             <div class="grid-fields">
-              <label>Blocks <input type="number" min="1" max={MAX_BLOCKS} bind:value={settings[`${axis}Blocks`]} /></label>
-              <label>Start at <input type="number" step="any" bind:value={settings[`${axis}Start`]} /></label>
-              <label>Count by <input type="number" min="0" step="any" bind:value={settings[`${axis}Step`]} /></label>
+              {#each RANGE_FIELDS as [key, name]}
+                <div class="range-field">
+                  <label for="{axis}-{key}">{name}</label>
+                  <MathInput id="{axis}-{key}" aria-invalid={!!axes.problems[`${axis}${key}`]} bind:value={settings[`${axis}${key}`]} />
+                </div>
+              {/each}
             </div>
-            <label class="field">
-              Numbers
-              <select bind:value={settings[`${axis}Every`]}>
-                {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
-              </select>
-            </label>
+            {#each RANGE_FIELDS as [key]}
+              {#if axes.problems[`${axis}${key}`]}<p class="help problem">{axes.problems[`${axis}${key}`]}</p>{/if}
+            {/each}
+            <div class="pair">
+              <label class="field">
+                Numbers
+                <select bind:value={settings[`${axis}Every`]}>
+                  {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
+                </select>
+              </label>
+              <label class="field">
+                Write numbers as
+                <select bind:value={settings[`${axis}Numbering`]}>
+                  {#each Object.entries(NUMBERINGS) as [v, label]}<option value={v}>{label}</option>{/each}
+                </select>
+              </label>
+            </div>
             <div class="field">
               <span>Label <span class="hint">at the {axis === 'x' ? 'right' : 'top'} end</span></span>
               <LabelField
@@ -189,7 +210,10 @@
   .sections { overflow: hidden; }
 
   .grid-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 0.75rem; }
-  .grid-fields label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; }
+  .range-field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; min-width: 0; }
+  .grid-fields ~ .help { margin: -0.3rem 0 0.75rem; font-size: 0.84rem; }
+  .help.problem { color: var(--red); font-weight: 600; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
   .field:last-child { margin-bottom: 0; }
   .field .hint { font-weight: 400; color: var(--muted); }

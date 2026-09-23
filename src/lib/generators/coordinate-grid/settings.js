@@ -1,10 +1,14 @@
 // Every choice the teacher makes, with its default. The page address carries
 // any non-default values so a graph can be bookmarked or shared.
+//
+// Each axis's range is kept as the text the teacher typed ("-2", "2pi", "pi/4");
+// readAxes() works out what it means.
 
 import { CAPS } from '$lib/shared/caps.js'
+import { parseNumber } from '$lib/shared/math.js'
+import { NUMBERINGS, fmt, niceText } from '$lib/shared/numbering.js'
 
-export { CAPS }
-export { fmt } from '$lib/shared/numbering.js'
+export { CAPS, fmt }
 
 export const MAX_BLOCKS = 50
 export const EVERY = [1, 2, 5, 10, 0] // number every nth line; 0 = no numbers
@@ -13,14 +17,16 @@ export const LABEL_MODES = ['text', 'none'] // the letter at an axis arrow, like
 const CAP_KEYS = ['xStartCap', 'xEndCap', 'yStartCap', 'yEndCap']
 
 export const DEFAULT_SETTINGS = {
-  xBlocks: 15,
-  yBlocks: 15,
-  xStep: 1,
-  yStep: 1,
-  xStart: 0,
-  yStart: 0,
+  xFrom: '0',
+  xTo: '15',
+  xStep: '1',
+  yFrom: '0',
+  yTo: '15',
+  yStep: '1',
   xEvery: 1,
   yEvery: 1,
+  xNumbering: 'decimal',
+  yNumbering: 'decimal',
   title: '',
   titleMode: 'none',
   xTitle: '', // runs along the axis, e.g. "Time (hours)"
@@ -41,18 +47,28 @@ export const DEFAULT_SETTINGS = {
 export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS)
 
 const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+const text = (v, fallback) => (v === undefined || v === null ? fallback : String(v))
 const titleMode = (v, fallback) => (TITLE_MODES.includes(v) ? v : fallback)
 const labelMode = (v, fallback) => (LABEL_MODES.includes(v) ? v : fallback)
 
 const cap = (v, fallback) => (v in CAPS ? v : fallback)
 
 /** Older links and presets: an axis label could be a blank line (now an axis
- *  title), and arrows were one on/off switch for every end. */
+ *  title), arrows were one on/off switch for every end, and a range was a start
+ *  and a number of blocks rather than From and To. */
 function upgrade(s) {
   const out = { ...s }
   for (const axis of ['x', 'y']) {
     if (s[`${axis}LabelMode`] === 'blank') Object.assign(out, { [`${axis}LabelMode`]: 'none', [`${axis}TitleMode`]: 'blank' })
+    const [blocks, start] = [s[`${axis}Blocks`], s[`${axis}Start`]]
+    if (s[`${axis}From`] === undefined && (blocks !== undefined || start !== undefined)) {
+      const step = parseNumber(String(s[`${axis}Step`] ?? 1)) ?? 1
+      const from = num(start, 0)
+      const to = from + Math.max(1, Math.round(num(blocks, 15))) * (step > 0 ? step : 1)
+      Object.assign(out, { [`${axis}From`]: plain(from), [`${axis}To`]: plain(to), [`${axis}Step`]: plain(step > 0 ? step : 1) })
+    }
+    delete out[`${axis}Blocks`]
+    delete out[`${axis}Start`]
   }
   if (s.arrows === false && CAP_KEYS.every((k) => s[k] === undefined)) for (const k of CAP_KEYS) out[k] = 'none'
   delete out.arrows
@@ -60,23 +76,27 @@ function upgrade(s) {
   return out
 }
 
-/** Tidy raw form values (number inputs can be empty) into usable settings. */
+/** A number as range text, the way the address writes it: "-2", "0.5". */
+const plain = (v) => String(Number(v.toFixed(10)))
+
+/** Tidy raw values (from a form, a link or a stored preset) into usable settings. */
 export function cleanSettings(s) {
   s = upgrade(s)
   const d = DEFAULT_SETTINGS
-  const blocks = (v, f) => clamp(Math.round(num(v, f)), 1, MAX_BLOCKS)
-  const step = (v) => (num(v, 1) > 0 ? num(v, 1) : 1)
+  const numbering = (v) => (v in NUMBERINGS ? v : 'decimal')
   return {
     ...d,
     ...s,
-    xBlocks: blocks(s.xBlocks, d.xBlocks),
-    yBlocks: blocks(s.yBlocks, d.yBlocks),
-    xStep: step(s.xStep),
-    yStep: step(s.yStep),
-    xStart: num(s.xStart, 0),
-    yStart: num(s.yStart, 0),
-    xEvery: EVERY.includes(s.xEvery) ? s.xEvery : 1,
-    yEvery: EVERY.includes(s.yEvery) ? s.yEvery : 1,
+    xFrom: text(s.xFrom, d.xFrom),
+    xTo: text(s.xTo, d.xTo),
+    xStep: text(s.xStep, d.xStep),
+    yFrom: text(s.yFrom, d.yFrom),
+    yTo: text(s.yTo, d.yTo),
+    yStep: text(s.yStep, d.yStep),
+    xEvery: EVERY.includes(Number(s.xEvery)) ? Number(s.xEvery) : 1,
+    yEvery: EVERY.includes(Number(s.yEvery)) ? Number(s.yEvery) : 1,
+    xNumbering: numbering(s.xNumbering),
+    yNumbering: numbering(s.yNumbering),
     title: String(s.title ?? ''),
     xTitle: String(s.xTitle ?? ''),
     yTitle: String(s.yTitle ?? ''),
@@ -111,6 +131,13 @@ export function settingsToQuery(s) {
 export function settingsFromParams(params) {
   const s = structuredClone(DEFAULT_SETTINGS)
   if (params.get('arrows') === '0' && !CAP_KEYS.some((k) => params.has(k))) for (const k of CAP_KEYS) s[k] = 'none'
+  // A link from before From/To: let upgrade() turn its start and blocks into a range.
+  for (const axis of ['x', 'y']) {
+    if (params.has(`${axis}From`) || !(params.has(`${axis}Blocks`) || params.has(`${axis}Start`))) continue
+    delete s[`${axis}From`]
+    delete s[`${axis}To`]
+    for (const key of [`${axis}Blocks`, `${axis}Start`]) if (params.has(key)) s[key] = Number(params.get(key))
+  }
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
     if (!params.has(key)) continue
     const raw = params.get(key)
@@ -119,4 +146,39 @@ export function settingsFromParams(params) {
     else s[key] = raw
   }
   return cleanSettings(s)
+}
+
+/**
+ * Each axis's range as numbers, and anything the teacher should fix, as
+ * messages for the settings panel. An axis whose range can't be used falls
+ * back to 0 to 15 by 1, so there is always a figure.
+ * @returns {{ x: { start: number, step: number, blocks: number }, y: { start: number, step: number, blocks: number }, problems: Record<string, string | null> }}
+ */
+export function readAxes(s) {
+  const problems = {}
+  const out = {}
+  for (const axis of ['x', 'y']) {
+    const key = (k) => `${axis}${k}`
+    const from = parseNumber(s[key('From')])
+    const to = parseNumber(s[key('To')])
+    const step = parseNumber(s[key('Step')])
+    const n = (v) => niceText(v, s[key('Numbering')])
+    const p = { From: null, To: null, Step: null }
+    if (from === null) p.From = 'Type a number, like −10, 2.5, 1/2 or −2π.'
+    if (to === null) p.To = 'Type a number, like 10, 2.5, 1/2 or 2π.'
+    if (step === null) p.Step = 'Type a number, like 1, 0.5, 1/4 or π/6.'
+    else if (step <= 0) p.Step = 'Count by a number bigger than 0.'
+    if (from !== null && to !== null && from >= to) p.To = `The axis has to end after it starts, so make this bigger than ${n(from)}.`
+    let blocks = 15
+    if (!p.From && !p.To && !p.Step) {
+      const exact = (to - from) / step
+      blocks = Math.ceil(exact - 1e-9)
+      if (blocks > MAX_BLOCKS) p.Step = `That makes ${blocks} blocks. Count by a bigger number (${MAX_BLOCKS} blocks at most).`
+      else if (Math.abs(exact - Math.round(exact)) > 1e-9) p.To = `Counting by ${n(step)} from ${n(from)} doesn't land on ${n(to)}, so the grid runs on to ${n(from + blocks * step)}.`
+    }
+    const ok = !p.From && !(p.To && !p.To.startsWith('Counting')) && !p.Step
+    out[axis] = ok ? { start: from, step, blocks } : { start: 0, step: 1, blocks: 15 }
+    for (const [k, v] of Object.entries(p)) problems[key(k)] = v
+  }
+  return { ...out, problems }
 }

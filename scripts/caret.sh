@@ -9,10 +9,10 @@ VENDOR="$(cd "$(dirname "$0")/../vendor" && pwd)"
 cd "$CARET"
 pnpm install --frozen-lockfile
 pnpm build
-for pkg in core math; do
+for pkg in core math svelte; do
   (cd "packages/$pkg" && pnpm pack --pack-destination "$VENDOR" >/dev/null)
 done
 # Repacking keeps the version at 0.0.0, so reinstall to update package-lock's hashes.
-cd "$VENDOR/.." && npm install ./vendor/caret-js-core-0.0.0.tgz ./vendor/caret-js-math-0.0.0.tgz >/dev/null
+cd "$VENDOR/.." && npm install ./vendor/caret-js-core-0.0.0.tgz ./vendor/caret-js-math-0.0.0.tgz ./vendor/caret-js-svelte-0.0.0.tgz >/dev/null
 cd "$CARET"
 echo "Packed Caret $(git rev-parse --short HEAD) ($(git branch --show-current)) into vendor/"

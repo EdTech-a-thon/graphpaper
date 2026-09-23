@@ -9,10 +9,11 @@
   import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
+  import MathInput from '$lib/shared/MathInput.svelte'
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
-  import { NUMBERINGS, numberText } from '$lib/shared/numbering.js'
+  import { NUMBERINGS, niceText } from '$lib/shared/numbering.js'
   import NumberLine from './NumberLine.svelte'
   import { BUILT_IN_PRESETS, presetStore } from './presets.js'
   import { CAPS, cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery } from './settings.js'
@@ -55,7 +56,7 @@
 
   const lineSummary = $derived.by(() => {
     const { from, to, step } = line.range
-    const n = (v) => numberText(v, clean.numbering)
+    const n = (v) => niceText(v, clean.numbering)
     return [
       `${n(from)} to ${n(to)}`,
       `by ${n(step)}`,
@@ -94,21 +95,19 @@
       </section>
 
       <section class="card inequality">
-        <label class="field">
-          <span class="card-head flush">Inequality <span class="hint">leave empty for a blank line</span></span>
-          <input
-            type="text"
-            placeholder="-2 < x <= 5"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
+        <div class="field">
+          <label class="card-head flush" for="inequality">Inequality <span class="hint">leave empty for a blank line</span></label>
+          <MathInput
+            kind="inequality"
+            id="inequality"
+            placeholder="−2 < x ≤ 5"
             aria-invalid={!!line.problems.inequality}
             aria-describedby="inequality-help"
             bind:value={settings.inequality}
           />
-        </label>
+        </div>
         <p id="inequality-help" class="help" class:problem={line.problems.inequality}>
-          {line.problems.inequality ?? 'Try x < -1 or x >= 3, x != 2, all real numbers or no solution. Type <= for ≤ and pi for π.'}
+          {line.problems.inequality ?? 'Try x < −1 or x ≥ 3, x ≠ 2, all real numbers or no solution. Type <= for ≤, != for ≠, pi for π and / for a fraction.'}
         </p>
         <div class="graph-row">
           <label class="check"><input type="checkbox" bind:checked={settings.showGraph} /> Show the graph</label>
@@ -124,10 +123,10 @@
         <Section title="Line" icon={Ruler} summary={lineSummary}>
           <div class="range-fields">
             {#each RANGE_FIELDS as [key, name]}
-              <label>
-                {name}
-                <input type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-invalid={!!line.problems[key]} bind:value={settings[key]} />
-              </label>
+              <div class="range-field">
+                <label for="range-{key}">{name}</label>
+                <MathInput id="range-{key}" aria-invalid={!!line.problems[key]} bind:value={settings[key]} />
+              </div>
             {/each}
           </div>
           {#each RANGE_FIELDS as [key]}
@@ -210,16 +209,14 @@
   .sections { overflow: hidden; }
 
   .inequality { padding: 1rem 1.1rem; }
-  .inequality input[type='text'] { font-size: 1.05rem; }
   .help { margin: 0.45rem 0 0; font-size: 0.84rem; color: var(--muted); }
   .help.problem { color: var(--red); font-weight: 600; }
-  [aria-invalid='true'] { border-color: var(--red); }
   .graph-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; font-weight: 600; font-size: 0.88rem; }
   .check, .color { display: flex; align-items: center; gap: 0.45rem; cursor: pointer; }
   .color input { width: 2.2rem; height: 1.8rem; padding: 0; border: 1.5px solid var(--border); border-radius: 8px; background: none; cursor: pointer; }
 
   .range-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
-  .range-fields label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; }
+  .range-field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; min-width: 0; }
   .range-fields { margin-bottom: 0.75rem; }
   .range-fields ~ .help { margin: -0.3rem 0 0.75rem; }
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }

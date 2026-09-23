@@ -1,7 +1,8 @@
 // Lays out a coordinate grid as plain numbers for Graph.svelte to draw. Every
 // block is a square of CELL units; the SVG scales to fit wherever it's shown.
 
-import { fmt } from './settings.js'
+import { numberText } from '$lib/shared/numbering.js'
+import { readAxes } from './settings.js'
 
 export const CELL = 32
 const FS = 14 // tick-number font size
@@ -9,7 +10,7 @@ const PAD = 14
 const EXT = 20 // how far an arrowed axis runs past the grid
 const CHAR = FS * 0.6 // rough width of one digit
 
-function ticks(blocks, step, start, every) {
+function ticks(blocks, step, start, every, numbering) {
   // Count from the line at 0 when there is one, so "every 5" gives 0, 5, 10…
   const zero = -start / step
   const z = Math.round(zero)
@@ -17,12 +18,14 @@ function ticks(blocks, step, start, every) {
   const out = []
   if (!every) return out
   for (let i = 0; i <= blocks; i++) {
-    if ((i - ref) % every === 0) out.push({ i, text: fmt(start + i * step) })
+    if ((i - ref) % every === 0) out.push({ i, text: numberText(start + i * step, numbering) })
   }
   return out
 }
 
-export function buildGraph(s) {
+export function buildGraph(settings) {
+  const { x, y } = readAxes(settings)
+  const s = { ...settings, xStart: x.start, xStep: x.step, xBlocks: x.blocks, yStart: y.start, yStep: y.step, yBlocks: y.blocks }
   const x0 = s.xStart
   const y0 = s.yStart
   const x1 = x0 + s.xBlocks * s.xStep
@@ -34,8 +37,8 @@ export function buildGraph(s) {
   const yAxisInside = x0 < 0 && x1 > 0
   const xAxisInside = y0 < 0 && y1 > 0
 
-  const xTicks = ticks(s.xBlocks, s.xStep, x0, s.xEvery)
-  const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery)
+  const xTicks = ticks(s.xBlocks, s.xStep, x0, s.xEvery, s.xNumbering)
+  const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery, s.yNumbering)
   // An axis runs a little past the grid wherever it ends in a cap.
   const extL = s.xStartCap === 'none' ? 0 : EXT
   const extR = s.xEndCap === 'none' ? 0 : EXT

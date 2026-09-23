@@ -2,7 +2,7 @@
 // line is always LINE units long, whatever its range, so every figure pastes
 // into a worksheet at the same width; the SVG scales to fit wherever it's shown.
 
-import { numberLabel } from '$lib/shared/numbering.js'
+import { niceLabel, numberLabel } from '$lib/shared/numbering.js'
 import { readLine } from './settings.js'
 
 export const LINE = 600
@@ -48,7 +48,7 @@ export function buildLine(s) {
   // An endpoint without a number under it gets one above it, clear of the tick
   // numbers, so the figure is never ambiguous.
   const onNumber = (v) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
-  const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: numberLabel(v, s.numbering) }))
+  const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, s.numbering) }))
 
   const labels = ticks.filter((t) => t.label)
   const stacked = labels.some((l) => l.label.den)

@@ -5,7 +5,7 @@
 // "-2 < x <= 5"); readLine() works out what they mean.
 
 import { CAPS } from '$lib/shared/caps.js'
-import { NUMBERINGS, numberText } from '$lib/shared/numbering.js'
+import { NUMBERINGS, niceText } from '$lib/shared/numbering.js'
 import { parseInequality, parseNumber } from './inequality.js'
 
 export { CAPS }
@@ -103,7 +103,7 @@ export function readLine(s) {
   if (to === null) problems.to = 'Type a number, like 10, 2.5, 1/2 or 2π.'
   if (step === null) problems.step = 'Type a number, like 1, 0.5, 1/4 or π/6.'
   else if (step <= 0) problems.step = 'Count by a number bigger than 0.'
-  if (from !== null && to !== null && from >= to) problems.to = `The line has to end after it starts, so make this bigger than ${numberText(from, s.numbering)}.`
+  if (from !== null && to !== null && from >= to) problems.to = `The line has to end after it starts, so make this bigger than ${niceText(from, s.numbering)}.`
   const ticks = !problems.from && !problems.to && !problems.step ? Math.floor((to - from) / step + 1e-9) : 0
   if (ticks > MAX_TICKS) problems.step = `That makes ${ticks} ticks. Count by a bigger number (${MAX_TICKS} ticks at most).`
 
@@ -117,8 +117,7 @@ export function readLine(s) {
       .flatMap(({ lo, hi }) => [lo.v, hi.v])
       .filter((v) => Number.isFinite(v) && (v < range.from - 1e-9 || v > range.to + 1e-9))
     if (outside.length) {
-      const v = numberText(outside[0], s.numbering)
-      problems.inequality = `${v} is past the end of the line. Widen the range to show it.`
+      problems.inequality = `${niceText(outside[0], s.numbering)} is past the end of the line. Widen the range to show it.`
     }
   }
 

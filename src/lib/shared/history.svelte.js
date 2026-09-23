@@ -102,7 +102,9 @@ export function createHistory({ read, write, keyOf, tidy, storageKey, delay = 50
   /** Cmd/Ctrl+Z and Shift+Cmd+Z / Ctrl+Y, outside text boxes (they keep their own undo). */
   function onkeydown(event) {
     if (!(event.metaKey || event.ctrlKey) || event.altKey) return
-    if (event.target.matches?.('input[type=text], input[type=number], input[type=search], textarea')) return
+    // Text boxes keep their own undo; a math field has none, so the page's undo covers it.
+    const inMathField = event.target.closest?.('.caret-field')
+    if (!inMathField && event.target.matches?.('input[type=text], input[type=number], input[type=search], textarea')) return
     const key = event.key.toLowerCase()
     if (key === 'z' && !event.shiftKey) undo()
     else if ((key === 'z' && event.shiftKey) || key === 'y') redo()

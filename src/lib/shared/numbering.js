@@ -40,8 +40,24 @@ export function numberLabel(v, numbering) {
   return { text: fmt(v) }
 }
 
-/** The same label on one line, for summaries and messages: "−3/2", "3π/4". */
-export function numberText(v, numbering) {
-  const l = numberLabel(v, numbering)
-  return l.text ?? `${l.sign}${l.num}/${l.den}`
+/**
+ * A label for a number that may not fit the numbering, like an endpoint at 3π/2
+ * on a line in decimals: the numbering's own form if it is short, else π, then a
+ * fraction, then a decimal rounded to hundredths.
+ */
+export function niceLabel(v, numbering) {
+  const short = (l) => !l.text || !/\.\d{4}/.test(l.text)
+  for (const n of [numbering, 'pi', 'fraction']) {
+    const l = numberLabel(v, n)
+    if (short(l) && (n === numbering || l.den || l.text.includes('π'))) return l
+  }
+  return { text: fmt(Math.round(v * 100) / 100) }
 }
+
+const oneLine = (l) => l.text ?? `${l.sign}${l.num}/${l.den}`
+
+/** The same label on one line, for summaries and messages: "−3/2", "3π/4". */
+export const numberText = (v, numbering) => oneLine(numberLabel(v, numbering))
+
+/** niceLabel on one line. */
+export const niceText = (v, numbering) => oneLine(niceLabel(v, numbering))

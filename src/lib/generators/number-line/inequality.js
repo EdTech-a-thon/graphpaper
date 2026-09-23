@@ -2,32 +2,10 @@
 // an inequality becomes the set of numbers it's true for, as a list of intervals,
 // and a range value like "3π/2" becomes a number. Runs on the server too.
 
-import { CaretParser } from '@caret-js/core'
-import {
-  ComparisonNode,
-  KeywordNode,
-  LogicNode,
-  VariableNode,
-  comparisonTypingRules,
-  evaluate,
-  inequalityParselets,
-  numberParselets,
-  piTypingRule,
-  textToDoc,
-} from '@caret-js/math'
+import { ComparisonNode, KeywordNode, LogicNode, VariableNode, evaluate } from '@caret-js/math'
+import { fromText, parsers } from '$lib/shared/math.js'
 
-const TYPING_RULES = [...comparisonTypingRules, piTypingRule]
-const inequalityParser = new CaretParser(inequalityParselets())
-const numberParser = new CaretParser(numberParselets())
-
-const toDoc = (text) => textToDoc(text, { typingRules: TYPING_RULES })
-
-/** The value of a typed number like "-2.5", "1/3" or "3pi/2", or null. */
-export function parseNumber(text) {
-  if (!String(text ?? '').trim()) return null
-  const v = evaluate(numberParser.parse(toDoc(String(text))))
-  return v !== null && Number.isFinite(v) ? v : null
-}
+export { parseNumber } from '$lib/shared/math.js'
 
 /**
  * An interval runs from `lo` to `hi`. Each end is { v, closed }, where v can be
@@ -127,7 +105,7 @@ export function parseInequality(text) {
   if (!String(text ?? '').trim()) return { set: null, variable: null, error: null }
   const vars = new Set()
   try {
-    const set = setOf(inequalityParser.parse(toDoc(String(text))), vars)
+    const set = setOf(parsers.inequality.parse(fromText(text)), vars)
     if (vars.size > 1) return { set: null, variable: null, error: `Use one letter throughout, not ${[...vars].join(' and ')}.` }
     return { set, variable: [...vars][0] ?? null, error: null }
   } catch (e) {
