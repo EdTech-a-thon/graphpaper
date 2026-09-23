@@ -3,7 +3,9 @@
 
 export const MAX_BLOCKS = 50
 export const EVERY = [1, 2, 5, 10, 0] // number every nth line; 0 = no numbers
-export const LABEL_MODES = ['text', 'blank', 'none'] // written label, write-on line for students, nothing
+export const TITLE_MODES = ['text', 'blank', 'none'] // written title, write-on line for students, nothing
+export const LABEL_MODES = ['text', 'none'] // the letter at an axis arrow, like x or y
+export const LABEL_MAX = 4
 
 export const DEFAULT_SETTINGS = {
   xBlocks: 15,
@@ -16,7 +18,11 @@ export const DEFAULT_SETTINGS = {
   yEvery: 1,
   title: '',
   titleMode: 'none',
-  xLabel: 'x',
+  xTitle: '', // runs along the axis, e.g. "Time (hours)"
+  xTitleMode: 'none',
+  yTitle: '',
+  yTitleMode: 'none',
+  xLabel: 'x', // sits at the arrow tip
   xLabelMode: 'text',
   yLabel: 'y',
   yLabelMode: 'text',
@@ -29,10 +35,27 @@ export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS)
 
 const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
-const mode = (v, fallback) => (LABEL_MODES.includes(v) ? v : fallback)
+const titleMode = (v, fallback) => (TITLE_MODES.includes(v) ? v : fallback)
+const labelMode = (v, fallback) => (LABEL_MODES.includes(v) ? v : fallback)
+
+/** Older links and presets had one label per axis: a blank line or long text
+ *  ran along the axis, short text sat at the tip. Move those into titles. */
+function upgradeAxis(s, axis) {
+  const label = `${axis}Label`
+  const mode = `${axis}LabelMode`
+  const title = `${axis}Title`
+  const tMode = `${axis}TitleMode`
+  if (s[mode] === 'blank') return { [mode]: 'none', [tMode]: 'blank' }
+  const text = String(s[label] ?? '').trim()
+  if (text.length > LABEL_MAX && !String(s[title] ?? '').trim()) {
+    return { [label]: '', [mode]: 'none', [title]: text, [tMode]: s[mode] === 'text' ? 'text' : 'none' }
+  }
+  return {}
+}
 
 /** Tidy raw form values (number inputs can be empty) into usable settings. */
 export function cleanSettings(s) {
+  s = { ...s, ...upgradeAxis(s, 'x'), ...upgradeAxis(s, 'y') }
   const d = DEFAULT_SETTINGS
   const blocks = (v, f) => clamp(Math.round(num(v, f)), 1, MAX_BLOCKS)
   const step = (v) => (num(v, 1) > 0 ? num(v, 1) : 1)
@@ -48,11 +71,15 @@ export function cleanSettings(s) {
     xEvery: EVERY.includes(s.xEvery) ? s.xEvery : 1,
     yEvery: EVERY.includes(s.yEvery) ? s.yEvery : 1,
     title: String(s.title ?? ''),
-    xLabel: String(s.xLabel ?? ''),
-    yLabel: String(s.yLabel ?? ''),
-    titleMode: mode(s.titleMode, d.titleMode),
-    xLabelMode: mode(s.xLabelMode, d.xLabelMode),
-    yLabelMode: mode(s.yLabelMode, d.yLabelMode),
+    xTitle: String(s.xTitle ?? ''),
+    yTitle: String(s.yTitle ?? ''),
+    xLabel: String(s.xLabel ?? '').slice(0, LABEL_MAX),
+    yLabel: String(s.yLabel ?? '').slice(0, LABEL_MAX),
+    titleMode: titleMode(s.titleMode, d.titleMode),
+    xTitleMode: titleMode(s.xTitleMode, d.xTitleMode),
+    yTitleMode: titleMode(s.yTitleMode, d.yTitleMode),
+    xLabelMode: labelMode(s.xLabelMode, d.xLabelMode),
+    yLabelMode: labelMode(s.yLabelMode, d.yLabelMode),
     arrows: !!(s.arrows ?? d.arrows),
     light: !!(s.light ?? d.light),
   }

@@ -9,9 +9,6 @@ const PAD = 14
 const EXT = 20 // how far an arrowed axis runs past the grid
 const CHAR = FS * 0.6 // rough width of one digit
 
-/** Short labels like "x" or "y" sit at the arrow tip; longer ones run along the side. */
-const isShort = (label) => label.trim().length > 0 && label.trim().length <= 2
-
 function ticks(blocks, step, start, every) {
   // Count from the line at 0 when there is one, so "every 5" gives 0, 5, 10…
   const zero = -start / step
@@ -41,18 +38,22 @@ export function buildGraph(s) {
   const yTicks = ticks(s.yBlocks, s.yStep, y0, s.yEvery)
   const ext = s.arrows ? EXT : 0
 
-  // Each label is written text, a blank write-on line for students, or nothing.
+  // Titles are written text, a blank write-on line for students, or nothing.
+  // The chart title sits on top; axis titles run along the bottom and left.
+  // Axis labels (x, y) sit at the arrow tips.
   const title = s.titleMode === 'text' ? s.title.trim() : ''
+  const xTitle = s.xTitleMode === 'text' ? s.xTitle.trim() : ''
+  const yTitle = s.yTitleMode === 'text' ? s.yTitle.trim() : ''
+  const titleBlank = s.titleMode === 'blank'
+  const xBlank = s.xTitleMode === 'blank'
+  const yBlank = s.yTitleMode === 'blank'
+  const titleRow = title || titleBlank
+  const xSide = xTitle || xBlank
+  const ySide = yTitle || yBlank
   const xLabel = s.xLabelMode === 'text' ? s.xLabel.trim() : ''
   const yLabel = s.yLabelMode === 'text' ? s.yLabel.trim() : ''
-  const titleBlank = s.titleMode === 'blank'
-  const xBlank = s.xLabelMode === 'blank'
-  const yBlank = s.yLabelMode === 'blank'
-  const titleRow = title || titleBlank
-  const xSide = xLabel ? !isShort(xLabel) : xBlank // label (or blank) under the grid
-  const ySide = yLabel ? !isShort(yLabel) : yBlank
-  const xTip = isShort(xLabel)
-  const yTip = isShort(yLabel)
+  const xTip = !!xLabel
+  const yTip = !!yLabel
 
   const yNumW = !yAxisInside && yTicks.length ? Math.max(...yTicks.map((t) => t.text.length)) * CHAR + 8 : 0
   const xNumH = !xAxisInside && xTicks.length ? FS + 8 : 0
@@ -95,12 +96,12 @@ export function buildGraph(s) {
 
   const xSideY = T + gridH + Math.max(xNumH, yAxisInside ? ext : 0) + FS * 1.2 + 6
   if (xTip) labels.push({ x: L + gridW + ext + 6, y: axisY + FS * 0.4, text: xLabel, kind: 'tip', anchor: 'start' })
-  else if (xLabel) labels.push({ x: midX, y: xSideY, text: xLabel, kind: 'side' })
+  if (xTitle) labels.push({ x: midX, y: xSideY, text: xTitle, kind: 'side' })
   else if (xBlank) blanks.push({ x1: midX - Math.min(100, gridW / 2), y1: xSideY, x2: midX + Math.min(100, gridW / 2), y2: xSideY })
 
   const ySideX = PAD + FS * 0.9
   if (yTip) labels.push({ x: axisX, y: T - ext - 6, text: yLabel, kind: 'tip', anchor: 'middle' })
-  else if (yLabel) labels.push({ x: ySideX, y: midY, text: yLabel, kind: 'side', rotate: true })
+  if (yTitle) labels.push({ x: ySideX, y: midY, text: yTitle, kind: 'side', rotate: true })
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
   return {

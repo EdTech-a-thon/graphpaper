@@ -5,7 +5,7 @@
   // page address so a bookmark brings back exactly this graph, and every
   // change can be undone.
   import {
-    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, Redo2, Undo2,
+    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Redo2, Undo2,
   } from '@lucide/svelte'
   import Footer from './Footer.svelte'
   import Graph from './Graph.svelte'
@@ -13,7 +13,7 @@
   import Presets from './Presets.svelte'
   import Section from './Section.svelte'
   import { copyPng, downloadPng, downloadSvg } from './exporting.js'
-  import { MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
+  import { LABEL_MAX, MAX_BLOCKS, cleanSettings, fmt, settingsFromParams, settingsToQuery } from './settings.js'
 
   let settings = $state(settingsFromParams(new URLSearchParams(window.location.search)))
   const clean = $derived(cleanSettings(settings))
@@ -88,11 +88,17 @@
     { axis: 'y', title: 'y-axis', icon: MoveUp },
   ]
 
-  function labelSummary(mode, text) {
-    if (mode === 'blank') return 'blank line'
-    if (mode === 'none' || !text.trim()) return 'no label'
-    return `“${text.trim()}”`
-  }
+  // Titles on top, then the letters at the arrow tips, like Excel and Sheets
+  // call them: a chart title and axis titles.
+  const TITLES = [
+    { key: 'title', name: 'Chart title', placeholder: 'Distance over time' },
+    { key: 'xTitle', name: 'x-axis title', placeholder: 'Time (hours)' },
+    { key: 'yTitle', name: 'y-axis title', placeholder: 'Distance (km)' },
+  ]
+  const LABELS = [
+    { key: 'xLabel', name: 'x-axis label', placeholder: 'x' },
+    { key: 'yLabel', name: 'y-axis label', placeholder: 'y' },
+  ]
   function axisSummary(axis) {
     const blocks = clean[`${axis}Blocks`]
     const step = clean[`${axis}Step`]
@@ -102,12 +108,17 @@
       `${fmt(start)} to ${fmt(start + blocks * step)}`,
       `by ${fmt(step)}s`,
       every ? (every === 1 ? 'numbered' : `numbered every ${every}`) : 'unnumbered',
-      labelSummary(clean[`${axis}LabelMode`], clean[`${axis}Label`]),
     ].join(' · ')
   }
-  const titleSummary = $derived(
-    clean.titleMode === 'blank' ? 'Blank line for students' : clean.titleMode === 'text' && clean.title.trim() ? `“${clean.title.trim()}”` : 'None',
-  )
+  const titlesSummary = $derived.by(() => {
+    const shown = (key) => (clean[`${key}Mode`] === 'text' ? clean[key].trim() : '')
+    const parts = TITLES.map(({ key, name }) =>
+      clean[`${key}Mode`] === 'blank' ? `${name}: blank line` : shown(key) ? `“${shown(key)}”` : '',
+    )
+    const tips = LABELS.map(({ key }) => shown(key)).filter(Boolean)
+    if (tips.length) parts.push(`labels ${tips.join(', ')}`)
+    return parts.filter(Boolean).join(' · ') || 'None'
+  })
   const styleSummary = $derived(`${clean.arrows ? 'Arrows' : 'No arrows'} · ${clean.light ? 'light gray' : 'black'} grid lines`)
 
   function applyPreset(preset) {
@@ -153,7 +164,7 @@
       <img src="/favicon.svg" alt="" width="40" height="40" />
       <h1>Graph Paper Maker</h1>
     </div>
-    <p>Make a coordinate grid for your class, then print it or paste it into a worksheet.</p>
+    <p>Make a coordinate grid for your class, then paste it into a worksheet or download it.</p>
   </header>
 
   <div class="layout">
@@ -164,6 +175,21 @@
       </section>
 
       <section class="card sections">
+        <Section title="Titles" icon={Heading} summary={titlesSummary}>
+          {#each TITLES as { key, name, placeholder }}
+            <div class="field">
+              <span>{name}</span>
+              <LabelField {name} {placeholder} bind:mode={settings[`${key}Mode`]} bind:text={settings[key]} />
+            </div>
+          {/each}
+          {#each LABELS as { key, name, placeholder }}
+            <div class="field">
+              <span>{name} <span class="hint">at the arrow</span></span>
+              <LabelField {name} {placeholder} blank={false} maxlength={LABEL_MAX} bind:mode={settings[`${key}Mode`]} bind:text={settings[key]} />
+            </div>
+          {/each}
+        </Section>
+
         {#each AXES as { axis, title, icon }}
           <Section {title} {icon} summary={axisSummary(axis)}>
             <div class="grid-fields">
@@ -177,21 +203,8 @@
                 {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
               </select>
             </label>
-            <div class="field">
-              <span>Label</span>
-              <LabelField
-                name="{title} label"
-                placeholder={axis === 'x' ? 'x or Time (hours)' : 'y or Distance (km)'}
-                bind:mode={settings[`${axis}LabelMode`]}
-                bind:text={settings[`${axis}Label`]}
-              />
-            </div>
           </Section>
         {/each}
-
-        <Section title="Title" icon={Heading} summary={titleSummary}>
-          <LabelField name="Title" placeholder="Graph title" bind:mode={settings.titleMode} bind:text={settings.title} />
-        </Section>
 
         <Section title="Style" icon={Palette} summary={styleSummary}>
           <label class="check"><input type="checkbox" bind:checked={settings.arrows} /> Arrows on the axes</label>
@@ -203,8 +216,6 @@
     <div class="preview">
       <div class="card canvas">
       <div class="toolbar" role="toolbar" aria-label="Graph actions">
-        <button class="icon-btn primary" aria-label="Print" data-tip="Print" onclick={() => window.print()}><Printer size={19} /></button>
-        <span class="divider"></span>
         <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
         <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
         <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
@@ -239,6 +250,9 @@
   @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
   .controls { display: flex; flex-direction: column; gap: 1rem; }
+  /* Cards keep their full height so the column scrolls instead of squashing
+     them (the settings card clips its corners, which would let it shrink). */
+  .controls > :global(*) { flex-shrink: 0; }
 
   /* Wide screens: the page fills the window exactly. The settings column
      scrolls on its own; the graph shrinks to fit beside it. */
@@ -262,6 +276,7 @@
   .grid-fields label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; }
   .field { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.75rem; }
   .field:last-child { margin-bottom: 0; }
+  .field .hint { font-weight: 400; color: var(--muted); }
   .check { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; font-size: 0.95rem; cursor: pointer; }
   .check input { accent-color: var(--blue); width: 1rem; height: 1rem; }
 

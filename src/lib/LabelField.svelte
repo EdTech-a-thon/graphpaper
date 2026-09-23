@@ -1,19 +1,19 @@
 <script>
-  // One label (title or axis name): written text, a blank line for students to
-  // write on, or nothing at all.
+  // One piece of text on the graph: written text, a blank line for students
+  // to write on (titles only), or nothing at all.
   import { Ban, PencilLine, Type } from '@lucide/svelte'
 
-  let { name, mode = $bindable(), text = $bindable(), placeholder = '' } = $props()
+  let { name, mode = $bindable(), text = $bindable(), placeholder = '', blank = true, maxlength = undefined } = $props()
 
-  const MODES = [
+  const MODES = $derived([
     ['text', 'Text', Type],
-    ['blank', 'Blank line', PencilLine],
+    ...(blank ? [['blank', 'Blank line', PencilLine]] : []),
     ['none', 'None', Ban],
-  ]
+  ])
 </script>
 
 <div class="label-field">
-  <div class="segmented" role="radiogroup" aria-label="{name} label">
+  <div class="segmented" role="radiogroup" aria-label={name}>
     {#each MODES as [value, label, Icon]}
       <button
         type="button"
@@ -28,7 +28,7 @@
     {/each}
   </div>
   {#if mode === 'text'}
-    <input type="text" aria-label="{name} text" {placeholder} bind:value={text} />
+    <input type="text" aria-label="{name} text" {placeholder} {maxlength} bind:value={text} />
   {:else if mode === 'blank'}
     <p class="note">Students write the {name.toLowerCase()} on a blank line.</p>
   {/if}
