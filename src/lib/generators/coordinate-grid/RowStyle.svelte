@@ -137,7 +137,9 @@
 
 <style>
   /* Outlined, so it reads as a secondary action apart from the plain × beside it. */
-  .outline { width: 2.1rem; height: 2.1rem; border: 1.5px solid var(--border); background: #fff; }
+  /* As tall as the math field beside it, and square. */
+  .row-style { display: flex; align-self: stretch; }
+  .outline { width: auto; height: auto; aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; }
   .outline:hover:not(:disabled), .outline[aria-expanded='true'] { border-color: var(--blue-border); background: var(--blue-soft); }
   .panel {
     position: fixed;
