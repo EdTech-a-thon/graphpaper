@@ -1,9 +1,9 @@
 <script>
-  // The palette button beside an equation: a small popup to pick its color, and
-  // for a line its style and which ends get arrows. Fixed-position like
+  // The button before an equation, drawn the way that equation is graphed (its
+  // color, line style and arrows, or dots for points), so each row reads as
+  // its own line on the grid. It opens a small popup to change those. Fixed-position like
   // CapPicker's menu, so the scrolling settings column can't clip it.
   import { tick } from 'svelte'
-  import { Palette } from '@lucide/svelte'
   import { ARROWS, COLORS, LINE_STYLES } from './equations.js'
 
   // row: { color, line, arrows }, edited in place. isPoints: only color applies.
@@ -27,7 +27,7 @@
     const below = r.bottom + GAP + h <= window.innerHeight - EDGE
     pos = {
       top: Math.max(EDGE, below ? r.bottom + GAP : r.top - GAP - h),
-      left: Math.max(EDGE, Math.min(r.right - w, window.innerWidth - EDGE - w)),
+      left: Math.max(EDGE, Math.min(r.left, window.innerWidth - EDGE - w)),
     }
     panel.querySelector('[aria-checked=true]')?.focus()
   }
@@ -47,6 +47,28 @@
 </script>
 
 <svelte:window {onpointerdown} onresize={() => open && hide(false)} onscrollcapture={(e) => open && !panel?.contains(e.target) && hide(false)} />
+
+<!-- How this row looks on the grid, in miniature. -->
+{#snippet preview()}
+  {@const ink = COLORS[row.color]}
+  <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+    {#if isPoints}
+      <circle cx="7" cy="16" r="3" fill={ink} />
+      <circle cx="17" cy="8" r="3" fill={ink} />
+    {:else}
+      {@const left = row.arrows === 'both' || row.arrows === 'left'}
+      {@const right = row.arrows === 'both' || row.arrows === 'right'}
+      <line
+        x1={left ? 7.5 : 4} y1={left ? 16.5 : 20} x2={right ? 16.5 : 20} y2={right ? 7.5 : 4}
+        stroke={ink} stroke-width={row.line === 'dotted' ? 2.6 : 2.2}
+        stroke-dasharray={row.line === 'dashed' ? '4 2.6' : row.line === 'dotted' ? '0.01 3.6' : undefined}
+        stroke-linecap={row.line === 'dotted' ? 'round' : 'butt'}
+      />
+      {#if left}<path d="M3,21 L5.1,13.9 L10.1,18.9 z" fill={ink} />{/if}
+      {#if right}<path d="M21,3 L18.9,10.1 L13.9,5.1 z" fill={ink} />{/if}
+    {/if}
+  </svg>
+{/snippet}
 
 {#snippet lineIcon(style)}
   <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true">
@@ -77,7 +99,7 @@
     data-tip={open ? undefined : 'Customize'}
     onclick={() => (open ? hide() : show())}
   >
-    <Palette size={17} color={row.color === 'black' ? undefined : COLORS[row.color]} />
+    {@render preview()}
   </button>
 
   {#if open}
@@ -136,7 +158,7 @@
 </div>
 
 <style>
-  /* Outlined, so it reads as a secondary action apart from the plain × beside it. */
+  /* Outlined, so it reads as its own control, apart from the plain × at the row's end. */
   /* As tall as the math field beside it, and square. */
   .row-style { display: flex; align-self: stretch; }
   .outline { width: auto; height: auto; aspect-ratio: 1; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; }

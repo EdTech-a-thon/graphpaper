@@ -144,6 +144,7 @@
         </div>
         {#each settings.equations as row, i}
           <div class="row">
+            <RowStyle {row} id="eq-{i}-style" label="equation {i + 1}" isPoints={!!rows[i]?.points} />
             <MathInput
               kind="equation"
               id="eq-{i}"
@@ -152,7 +153,6 @@
               aria-invalid={!!rows[i]?.problem}
               bind:value={row.text}
             />
-            <RowStyle {row} id="eq-{i}-style" label="equation {i + 1}" isPoints={!!rows[i]?.points} />
             <button class="icon-btn" aria-label="Remove equation {i + 1}" data-tip="Remove" onclick={() => removeRow(i)}><X size={17} /></button>
           </div>
           {#if rows[i]?.problem}<p class="help problem">{rows[i].problem}</p>{/if}
@@ -255,7 +255,7 @@
   .equations { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .head-row { display: flex; align-items: center; justify-content: space-between; }
   .row { display: flex; align-items: center; gap: 0.25rem; }
-  .row > :global(:first-child) { flex: 1; min-width: 0; margin-right: 0.2rem; }
+  .row > :global(.caret-field) { flex: 1; min-width: 0; margin: 0 0.2rem 0 0.15rem; }
   .equations .help { margin: -0.2rem 0 0; font-size: 0.84rem; }
   .add {
     align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem;

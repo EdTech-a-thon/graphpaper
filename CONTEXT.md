@@ -81,7 +81,7 @@ A line drawn across a coordinate grid from an equation, running edge to edge wit
 _Avoid_: Plot, function, curve
 
 **Row style**:
-How one equation is drawn, set from its Customize button: a color, a line style (solid, dashed or dotted) and which ends have arrows (both, neither, left or right; for an up-and-down line, left means the bottom). Points take only the color.
+How one equation is drawn, set from the button before it, which shows a miniature of how the row is drawn: a color, a line style (solid, dashed or dotted) and which ends have arrows (both, neither, left or right; for an up-and-down line, left means the bottom). Points take only the color.
 _Avoid_: Format, appearance, theme
 
 **Endpoint**:
