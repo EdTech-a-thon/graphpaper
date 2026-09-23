@@ -1,7 +1,8 @@
 <script>
   // Built-in and saved starting points. The one matching the current graph is
-  // highlighted; saved ones can be deleted.
+  // highlighted; saved ones can be deleted, after a confirmation.
   import { BookmarkPlus, Check, X } from '@lucide/svelte'
+  import Modal from './Modal.svelte'
   import { BUILT_IN_PRESETS, deletePreset, loadPresets, savePreset } from './presets.js'
   import { sameGraph } from './settings.js'
 
@@ -11,6 +12,7 @@
   let naming = $state(false)
   let name = $state('')
   let nameInput = $state()
+  let deleting = $state(null) // name of the preset awaiting confirmation
 
   function startSaving() {
     naming = true
@@ -23,6 +25,10 @@
     if (!trimmed) return
     saved = savePreset(saved, trimmed, settings)
     naming = false
+  }
+  function confirmDelete() {
+    saved = deletePreset(saved, deleting)
+    deleting = null
   }
   function onkeydown(event) {
     if (event.key === 'Escape') naming = false
@@ -41,7 +47,7 @@
           class="remove"
           aria-label="Delete preset {p.name}"
           title="Delete preset"
-          onclick={() => (saved = deletePreset(saved, p.name))}
+          onclick={() => (deleting = p.name)}
         ><X size={14} aria-hidden="true" /></button>
       </span>
     {/each}
@@ -61,6 +67,16 @@
   <p class="hint">Saved presets stay in this browser.</p>
 </div>
 
+{#if deleting !== null}
+  <Modal title="Delete preset?" onclose={() => (deleting = null)}>
+    <p>“{deleting}” will be removed from this browser. This can’t be undone.</p>
+    <div class="actions">
+      <button class="btn-ghost" data-autofocus onclick={() => (deleting = null)}>Cancel</button>
+      <button class="btn-danger" onclick={confirmDelete}>Delete</button>
+    </div>
+  </Modal>
+{/if}
+
 <style>
   .presets { padding: 1rem 1.1rem 0.9rem; }
   .saved { display: inline-flex; align-items: center; padding: 0; overflow: hidden; }
@@ -71,5 +87,11 @@
   .add { display: inline-flex; align-items: center; gap: 0.35rem; border-style: dashed; color: var(--blue-dark); }
   .naming { display: flex; gap: 0.35rem; margin-top: 0.6rem; }
   .naming input { flex: 1; }
+  .actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+  .btn-danger {
+    padding: 0.7rem 1.25rem; border: 0; border-radius: 12px; line-height: 1;
+    background: var(--red); color: #fff; font-size: 1rem; font-weight: 700;
+  }
+  .btn-danger:hover { background: #b91c1c; }
   .hint { margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--muted); }
 </style>

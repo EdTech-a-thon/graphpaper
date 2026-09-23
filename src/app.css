@@ -144,7 +144,6 @@ input:focus, select:focus { outline: none; border-color: var(--blue); }
   white-space: nowrap;
   pointer-events: none;
 }
-.per-page[data-tip]:has(button:hover)::after { display: none; }
 
 .card {
   background: var(--card);

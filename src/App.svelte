@@ -19,7 +19,8 @@
       <Builder />
     {/if}
   </main>
-  <Footer />
+  <!-- The builder puts the footer beside the graph instead. -->
+  {#if path === '/about' || path === '/privacy'}<Footer />{/if}
   <Help />
 </div>
 

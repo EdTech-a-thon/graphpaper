@@ -22,11 +22,10 @@ export const DEFAULT_SETTINGS = {
   yLabelMode: 'text',
   arrows: true,
   light: false, // gray grid lines instead of black
-  copies: 1,
 }
 
 /** Settings that describe the graph itself, which is what a preset saves. */
-export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS).filter((k) => k !== 'copies')
+export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS)
 
 const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
@@ -56,11 +55,10 @@ export function cleanSettings(s) {
     yLabelMode: mode(s.yLabelMode, d.yLabelMode),
     arrows: !!(s.arrows ?? d.arrows),
     light: !!(s.light ?? d.light),
-    copies: [1, 2, 4].includes(s.copies) ? s.copies : 1,
   }
 }
 
-/** Do two settings draw the same graph? (Ignores print copies.) */
+/** Do two settings draw the same graph? */
 export function sameGraph(a, b) {
   const ca = cleanSettings(a)
   const cb = cleanSettings(b)

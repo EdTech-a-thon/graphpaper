@@ -1,10 +1,12 @@
 <script>
   // The whole tool: presets and collapsed settings on the left, the graph and
-  // an icon toolbar on the right. Settings are mirrored into the page address
-  // so a bookmark brings back exactly this graph.
+  // an icon toolbar on the right. On a wide screen the page itself never
+  // scrolls; only the settings column does. Settings are mirrored into the
+  // page address so a bookmark brings back exactly this graph.
   import {
-    Copy, FileCode, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, RotateCcw,
+    Copy, FileDown, Heading, ImageDown, Link, MoveRight, MoveUp, Palette, Printer, RotateCcw,
   } from '@lucide/svelte'
+  import Footer from './Footer.svelte'
   import Graph from './Graph.svelte'
   import LabelField from './LabelField.svelte'
   import Presets from './Presets.svelte'
@@ -55,7 +57,7 @@
   const styleSummary = $derived(`${clean.arrows ? 'Arrows' : 'No arrows'} · ${clean.light ? 'light gray' : 'black'} grid lines`)
 
   function applyPreset(preset) {
-    settings = { ...$state.snapshot(preset), copies: settings.copies }
+    settings = $state.snapshot(preset)
   }
 
   let svg = $state()
@@ -149,16 +151,10 @@
     <div class="preview">
       <div class="toolbar card" role="toolbar" aria-label="Graph actions">
         <button class="icon-btn primary" aria-label="Print" data-tip="Print" onclick={() => window.print()}><Printer size={19} /></button>
-        <div class="per-page" role="radiogroup" aria-label="Graphs per printed page" data-tip="Graphs per page">
-          {#each [1, 2, 4] as n}
-            <button role="radio" aria-checked={settings.copies === n} class:on={settings.copies === n} onclick={() => (settings.copies = n)}>{n}</button>
-          {/each}
-          <span class="per-page-label">per page</span>
-        </div>
         <span class="divider"></span>
         <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
         <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
-        <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileCode size={19} /></button>
+        <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
         <button class="icon-btn" aria-label="Copy link" data-tip="Copy link" onclick={copyLink}><Link size={19} /></button>
         <span class="divider"></span>
         <button class="icon-btn" aria-label="Start over" data-tip="Start over" onclick={reset}><RotateCcw size={19} /></button>
@@ -167,15 +163,14 @@
       <div class="card sheet">
         <Graph settings={clean} bind:svg />
       </div>
+      <Footer />
     </div>
   </div>
 </div>
 
-<!-- What actually prints: just the graph(s), sized to the page. -->
-<div class="print-sheet copies-{clean.copies}">
-  {#each Array.from({ length: clean.copies }) as _, i}
-    <div class="print-cell"><Graph settings={clean} id="p{i}" /></div>
-  {/each}
+<!-- What actually prints: just the graph, sized to the page. -->
+<div class="print-sheet">
+  <Graph settings={clean} id="p" />
 </div>
 
 <style>
@@ -189,6 +184,17 @@
   @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
 
   .controls { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* Wide screens: the page fills the window exactly. The settings column
+     scrolls on its own; the graph shrinks to fit beside it. */
+  @media (min-width: 861px) and (min-height: 560px) {
+    .page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-bottom: 0; }
+    .layout { flex: 1; min-height: 0; align-items: stretch; }
+    .controls { min-height: 0; overflow-y: auto; margin: 0 -0.75rem; padding: 0 0.75rem 1.25rem; }
+    .preview { display: flex; flex-direction: column; min-height: 0; }
+    .sheet { flex: 1; min-height: 0; }
+    .sheet :global(svg) { width: 100%; height: 100%; }
+  }
   .card-head { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 1rem 1.1rem 0; }
   .card-head + :global(.presets) { padding-top: 0.6rem; }
   .sections { overflow: hidden; }
@@ -200,37 +206,22 @@
   .check { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; font-size: 0.95rem; cursor: pointer; }
   .check input { accent-color: var(--blue); width: 1rem; height: 1rem; }
 
-  .preview { position: sticky; top: 1rem; }
-  @media (max-width: 860px) { .preview { position: static; } }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; padding: 0.45rem; }
   .divider { width: 1px; height: 1.6rem; background: var(--border); margin: 0 0.3rem; }
-  .per-page { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; background: var(--bg); }
-  .per-page button {
-    width: 1.9rem; height: 1.9rem; border: 0; border-radius: 8px; background: transparent;
-    color: var(--muted); font-weight: 700; font-size: 0.9rem;
-  }
-  .per-page button.on { background: #fff; color: var(--blue-dark); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12); }
-  .per-page-label { padding: 0 0.45rem 0 0.25rem; font-size: 0.82rem; color: var(--muted); }
   @media (max-width: 480px) {
-    .per-page-label, .divider { display: none; }
-    .toolbar { justify-content: space-between; }
-    .toolbar { gap: 0.15rem; padding: 0.35rem; }
+    .divider { display: none; }
+    .toolbar { justify-content: space-between; gap: 0.15rem; padding: 0.35rem; }
     .toolbar :global(.icon-btn) { width: 2.15rem; height: 2.15rem; }
-    .per-page button { width: 1.7rem; height: 1.7rem; }
   }
   .status { min-height: 1.3rem; margin: 0.45rem 0.25rem; color: var(--green); font-weight: 600; font-size: 0.88rem; }
   .sheet { padding: 1rem; display: flex; justify-content: center; }
   .sheet :global(svg) { max-height: 74vh; width: auto; max-width: 100%; }
+  .preview :global(footer) { padding: 1rem 0 1.25rem; }
 
   .print-sheet { display: none; }
   @media print {
     @page { size: letter portrait; margin: 0.5in; }
-    .print-sheet { display: grid; gap: 0.3in; width: 7.5in; }
-    .print-cell { display: flex; justify-content: center; align-items: center; break-inside: avoid; }
-    .print-cell :global(svg) { width: 100%; height: 100%; }
-    .copies-1 .print-cell { height: 9.8in; }
-    .copies-2 .print-cell { height: 4.75in; }
-    .copies-4 { grid-template-columns: 1fr 1fr; }
-    .copies-4 .print-cell { height: 4.75in; }
+    .print-sheet { display: block; width: 7.5in; height: 9.8in; break-inside: avoid; }
+    .print-sheet :global(svg) { width: 100%; height: 100%; }
   }
 </style>
