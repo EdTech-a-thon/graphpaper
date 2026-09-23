@@ -24,7 +24,7 @@ export const GENERATORS = [
     path: '/coordinate-grid',
     blurb: 'Square grids with x- and y-axes, for plotting points and lines.',
     description:
-      'Make a printable coordinate grid (graph paper) for your class. Choose the size, scale, numbering, titles and axis arrows, then copy it into a worksheet or test.',
+      'Make a printable coordinate grid (graph paper) for your class. Graph lines like y = 2x + 1 and plot points, choose the range, titles and axis arrows, then copy it into a worksheet or test.',
     keywords: [
       'graph paper', 'grid paper', 'coordinate plane', 'cartesian plane', 'cartesian coordinate plane',
       'cartesian coordinates', 'rectangular coordinates', 'xy plane', 'x-y grid', 'xy', 'axes', 'x-axis', 'y-axis',

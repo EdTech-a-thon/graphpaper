@@ -9,7 +9,8 @@ and `docs/adr/` for decisions.
 
 - `/` **Directory**: every generator as a card with a live preview, plus a
   card to request one we don't make yet.
-- `/coordinate-grid` **Coordinate Grid Generator**: blocks, scale, numbering,
+- `/coordinate-grid` **Coordinate Grid Generator**: equations to graph (straight
+  lines and points, one per row), range and numbering,
   chart and axis titles (text or a blank line for students), axis labels, and
   a Figma-style end cap for each end of each axis. Presets, undo/redo, copy
   image, PNG/SVG download and copy link.

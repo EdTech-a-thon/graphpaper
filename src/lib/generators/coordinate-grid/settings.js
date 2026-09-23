@@ -39,6 +39,7 @@ export const DEFAULT_SETTINGS = {
   xEndCap: 'triangle', // right end
   yStartCap: 'triangle', // bottom end
   yEndCap: 'triangle', // top end
+  equations: [], // what's graphed, one row each: "y=2x+1", "(1,2),(3,4)"
 }
 
 /** Settings that describe the graph itself, which is what a preset saves. */
@@ -105,6 +106,7 @@ export function cleanSettings(s) {
     xLabelMode: labelMode(s.xLabelMode, d.xLabelMode),
     yLabelMode: labelMode(s.yLabelMode, d.yLabelMode),
     ...Object.fromEntries(CAP_KEYS.map((k) => [k, cap(s[k], d[k])])),
+    equations: Array.isArray(s.equations) ? s.equations.map((e) => String(e ?? '')) : [],
   }
 }
 
@@ -112,16 +114,19 @@ export function cleanSettings(s) {
 export function sameGraph(a, b) {
   const ca = cleanSettings(a)
   const cb = cleanSettings(b)
-  return GRAPH_KEYS.every((k) => ca[k] === cb[k])
+  const rows = (c) => c.equations.filter((e) => e.trim()).join('\n')
+  return GRAPH_KEYS.every((k) => (k === 'equations' ? rows(ca) === rows(cb) : ca[k] === cb[k]))
 }
 
 export function settingsToQuery(s) {
   const params = new URLSearchParams()
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
     const v = s[key]
-    if (v === def || v === null || v === undefined) continue
+    if (key === 'equations' || v === def || v === null || v === undefined) continue
     params.set(key, typeof v === 'boolean' ? (v ? '1' : '0') : String(v))
   }
+  // One eq= per row that has something in it.
+  for (const e of s.equations ?? []) if (e.trim()) params.append('eq', e.trim())
   return params.toString()
 }
 
@@ -135,8 +140,9 @@ export function settingsFromParams(params) {
     delete s[`${axis}To`]
     for (const key of [`${axis}Blocks`, `${axis}Start`]) if (params.has(key)) s[key] = Number(params.get(key))
   }
+  s.equations = params.getAll('eq')
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
-    if (!params.has(key)) continue
+    if (key === 'equations' || !params.has(key)) continue
     const raw = params.get(key)
     if (typeof def === 'number') s[key] = Number(raw)
     else if (typeof def === 'boolean') s[key] = raw === '1'

@@ -2,6 +2,7 @@
 // block is a square of CELL units; the SVG scales to fit wherever it's shown.
 
 import { numberText } from '$lib/shared/numbering.js'
+import { readEquations } from './equations.js'
 import { readAxes } from './settings.js'
 
 export const CELL = 32
@@ -9,6 +10,8 @@ const FS = 14 // tick-number font size
 const PAD = 14
 const EXT = 20 // how far an arrowed axis runs past the grid
 const CHAR = FS * 0.6 // rough width of one digit
+const HEAD = 12 // length of an arrowhead where a graphed line leaves the grid
+const HEAD_HALF = 5.5 // half its width
 
 function ticks(blocks, step, start, every, numbering) {
   // Count from the line at 0 when there is one, so "every 5" gives 0, 5, 10…
@@ -122,6 +125,30 @@ export function buildGraph(settings) {
   if (yTitle) labels.push({ x: ySideX, y: midY, text: yTitle, kind: 'side', rotate: true })
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
+  // What the teacher graphed: lines run edge to edge with an arrowhead where
+  // they leave the grid; points are dots.
+  const px = ({ x, y }) => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
+  const box = { x0, x1, y0, y1 }
+  const lines = []
+  const dots = []
+  for (const row of readEquations(settings.equations ?? [], box)) {
+    if (row?.ends) {
+      const [p, q] = row.ends.map(px)
+      const len = Math.hypot(q.x - p.x, q.y - p.y)
+      const u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len }
+      const head = (tip, dir) => {
+        const base = { x: tip.x - dir * u.x * HEAD, y: tip.y - dir * u.y * HEAD }
+        return `M${tip.x},${tip.y} L${base.x - u.y * HEAD_HALF},${base.y + u.x * HEAD_HALF} L${base.x + u.y * HEAD_HALF},${base.y - u.x * HEAD_HALF} z`
+      }
+      const inset = Math.min(HEAD - 1, len / 2)
+      lines.push({
+        x1: p.x + u.x * inset, y1: p.y + u.y * inset, x2: q.x - u.x * inset, y2: q.y - u.y * inset,
+        heads: len > HEAD * 2 ? [head(p, -1), head(q, 1)] : [],
+      })
+    }
+    for (const pt of row?.points ?? []) dots.push(px(pt))
+  }
+
   return {
     width: L + gridW + R,
     height: T + gridH + B,
@@ -134,5 +161,7 @@ export function buildGraph(settings) {
     numbers,
     labels,
     blanks,
+    lines,
+    dots,
   }
 }

@@ -1,28 +1,50 @@
 <script>
-  // The Coordinate Grid Generator: presets and collapsed settings on the left,
+  // The Coordinate Grid Generator: presets, what's graphed and collapsed settings on the left,
   // the figure card on the right. On a wide screen the page itself never
   // scrolls; only the settings column does. Settings are mirrored into the
   // page address so a bookmark or shared link brings back exactly this grid,
   // and the server renders that same grid on first load.
-  import { Heading, MoveRight, MoveUp } from '@lucide/svelte'
+  import { Heading, MoveRight, MoveUp, Plus, X } from '@lucide/svelte'
   import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import CapPicker from '$lib/shared/CapPicker.svelte'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
+  import HelpTip from '$lib/shared/HelpTip.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
   import MathInput from '$lib/shared/MathInput.svelte'
   import { niceText } from '$lib/shared/numbering.js'
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
+  import { readEquations } from './equations.js'
   import Graph from './Graph.svelte'
   import { presetStore } from './presets.js'
   import { CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
 
-  let settings = $state(settingsFromParams(page.url.searchParams))
+  // There's always a row to type the next equation in.
+  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [''] })
+
+  let settings = $state(withRow(settingsFromParams(page.url.searchParams)))
   const clean = $derived(cleanSettings(settings))
   const query = $derived(settingsToQuery(clean))
   const axes = $derived(readAxes(clean))
+  const rows = $derived(
+    readEquations(clean.equations, {
+      x0: axes.x.start, x1: axes.x.start + axes.x.blocks * axes.x.step,
+      y0: axes.y.start, y1: axes.y.start + axes.y.blocks * axes.y.step,
+    }),
+  )
+
+  // A new row, unless the last one is still empty, which gets the focus instead.
+  function addRow() {
+    if (settings.equations.at(-1)?.trim() !== '') settings.equations.push('')
+    const i = settings.equations.length - 1
+    requestAnimationFrame(() => document.getElementById(`eq-${i}`)?.focus())
+  }
+  function removeRow(i) {
+    settings.equations.splice(i, 1)
+    if (!settings.equations.length) settings.equations.push('')
+  }
 
   // The router can't replace the address until the page has hydrated, which
   // matters when a link arrives written differently from how we'd write it.
@@ -35,7 +57,7 @@
 
   const history = createHistory({
     read: () => $state.snapshot(clean),
-    write: (snap) => (settings = snap),
+    write: (snap) => (settings = withRow(snap)),
     keyOf: settingsToQuery,
     tidy: cleanSettings,
     storageKey: 'mathfigures.coordinate-grid.history',
@@ -90,7 +112,7 @@
   })
 
   function applyPreset(preset) {
-    settings = $state.snapshot(preset)
+    settings = withRow(cleanSettings($state.snapshot(preset)))
   }
 
   let svg = $state()
@@ -108,6 +130,31 @@
       <section class="card">
         <h2 class="card-head">Presets</h2>
         <Presets store={presetStore} same={sameGraph} settings={clean} onapply={applyPreset} />
+      </section>
+
+      <section class="card equations">
+        <div class="head-row">
+          <h2 class="card-head flush">Equations</h2>
+          <HelpTip id="equation-tip" label="How to type an equation">
+            Type a line like y = 2x + 1, y = −1/2x + 3, 2x + 3y = 6 or x = 4, or points like (2, 3) or (1, 2), (3, 4). Type / for
+            a fraction and pi for π.
+          </HelpTip>
+        </div>
+        {#each settings.equations as _, i}
+          <div class="row">
+            <MathInput
+              kind="equation"
+              id="eq-{i}"
+              aria-label="Equation {i + 1}"
+              placeholder={i === 0 ? 'y = 2x + 1' : ''}
+              aria-invalid={!!rows[i]?.problem}
+              bind:value={settings.equations[i]}
+            />
+            <button class="icon-btn" aria-label="Remove equation {i + 1}" data-tip="Remove" onclick={() => removeRow(i)}><X size={17} /></button>
+          </div>
+          {#if rows[i]?.problem}<p class="help problem">{rows[i].problem}</p>{/if}
+        {/each}
+        <button class="add" onclick={addRow}><Plus size={16} aria-hidden="true" /> Add equation</button>
       </section>
 
       <section class="card sections">
@@ -200,6 +247,18 @@
   .card-head { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 1rem 1.1rem 0; }
   .card-head + :global(.presets) { padding-top: 0.6rem; }
   .sections { overflow: hidden; }
+  .card-head.flush { padding: 0; }
+
+  .equations { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .head-row { display: flex; align-items: center; justify-content: space-between; }
+  .row { display: flex; align-items: center; gap: 0.35rem; }
+  .row > :global(:first-child) { flex: 1; min-width: 0; }
+  .equations .help { margin: -0.2rem 0 0; font-size: 0.84rem; }
+  .add {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem;
+    border: 1.5px dashed var(--border); border-radius: 999px; background: none; color: var(--blue-dark); font-weight: 700; font-size: 0.85rem;
+  }
+  .add:hover { background: var(--blue-soft); }
 
   .grid-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-bottom: 0.75rem; }
   .range-field { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.88rem; min-width: 0; }

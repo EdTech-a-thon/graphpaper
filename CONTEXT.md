@@ -65,7 +65,7 @@ A figure of one horizontal axis with evenly spaced ticks, for placing numbers an
 _Avoid_: Line graph, ruler
 
 **Equation**:
-What the teacher types to graph on a number line, such as −2 < x ≤ 5, x < −1 or x ≥ 3, or x = 2. Most are inequalities, but the page calls it an equation. A number line with no equation is blank. (The code and page address still call it `inequality`.)
+What the teacher types to graph, one per row. On a number line it's an inequality or equation in one letter, such as −2 < x ≤ 5, x < −1 or x ≥ 3, or x = 2; a number line with no equation is blank. On a coordinate grid it's a straight line, such as y = 2x + 1, 2x + 3y = 6 or x = 4, or a list of points, such as (1, 2), (3, 4). Points aren't equations, but they're typed in the same rows and called the same thing. (The number line's code and page address still call its equation `inequality`; the grid's rows are `eq`.)
 _Avoid_: Solution set, interval, expression
 
 **Tick**:
@@ -75,6 +75,10 @@ _Avoid_: Notch, hash mark, gridline
 **Equation graph**:
 The thick line, arrows and endpoints drawn over a number line to show which numbers make its equation true. Where it runs off an end it has its own arrow, just inside the number line's arrow.
 _Avoid_: Shading, solution, plot
+
+**Graphed line**:
+A line drawn across a coordinate grid from an equation, running edge to edge with an arrowhead where it leaves the grid. Only straight lines for now: no curves and no shaded inequalities.
+_Avoid_: Plot, function, curve
 
 **Endpoint**:
 Where an equation's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).

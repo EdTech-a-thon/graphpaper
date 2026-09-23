@@ -6,6 +6,7 @@ import { CaretParser, charTokenType, defineSchema, TokensTag } from '@caret-js/c
 import {
   comparisonTypingRules,
   docToText,
+  equationParselets,
   evaluate,
   fractionTokenType,
   inequalityParselets,
@@ -25,6 +26,7 @@ export const commands = mathCommands
 export const parsers = {
   number: new CaretParser(numberParselets()),
   inequality: new CaretParser(inequalityParselets()),
+  equation: new CaretParser(equationParselets()),
 }
 
 /** Text (typed, pasted or from a link) as a doc: "<=" becomes ≤, "3pi/2" a fraction. */
