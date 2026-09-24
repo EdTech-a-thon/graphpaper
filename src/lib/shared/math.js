@@ -16,11 +16,12 @@ import {
   numberParselets,
   parenthesesTokenType,
   piTypingRule,
+  radicalTokenType,
   subSupTokenType,
   textToDoc,
 } from '@caret-js/math'
 
-export const schema = defineSchema({ tokenTypes: new Set([charTokenType, fractionTokenType, parenthesesTokenType, subSupTokenType]) })
+export const schema = defineSchema({ tokenTypes: new Set([charTokenType, fractionTokenType, parenthesesTokenType, radicalTokenType, subSupTokenType]) })
 export const typingRules = [...comparisonTypingRules, piTypingRule]
 export const commands = mathCommands
 
@@ -30,7 +31,7 @@ export const parsers = {
   equation: new CaretParser(equationParselets()),
 }
 
-/** Text (typed, pasted or from a link) as a doc: "<=" becomes ≤, "3pi/2" a fraction, "x^2" an exponent. */
+/** Text (typed, pasted or from a link) as a doc: "<=" becomes ≤, "3pi/2" a fraction, "x^2" an exponent, "sqrt(2)" a root. */
 export const fromText = (text) => textToDoc(String(text ?? ''), { typingRules, fractions: true })
 
 /** The value of a typed number like "-2.5", "1/3" or "3pi/2", or null. */

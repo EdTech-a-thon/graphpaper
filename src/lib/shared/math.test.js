@@ -11,6 +11,8 @@ describe('text for the page address', () => {
     ['3π/2', 'number', '3pi/2'],
     ['(1+2)/4', 'number', '(1+2)/4'],
     ['-2.5', 'number', '-2.5'],
+    ['3√2', 'number', '3sqrt(2)'],
+    ['sqrt(3)/2', 'number', 'sqrt(3)/2'],
   ])('%s', (text, kind, expected) => {
     const once = toText(fromText(text), kind)
     expect(once).toBe(expected)

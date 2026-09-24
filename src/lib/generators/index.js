@@ -4,6 +4,7 @@
 
 import CoordinateGridPreview from './coordinate-grid/Preview.svelte'
 import NumberLinePreview from './number-line/Preview.svelte'
+import TrianglePreview from './triangle/Preview.svelte'
 
 /**
  * @typedef {object} Generator
@@ -47,6 +48,22 @@ export const GENERATORS = [
       'printable',
     ],
     Preview: NumberLinePreview,
+  },
+  {
+    id: 'triangle',
+    name: 'Triangle Generator',
+    path: '/triangle',
+    blurb: 'Triangles drawn to scale from their sides and angles, labeled for students.',
+    description:
+      'Make a printable triangle drawn to scale for your class. Give any three sides and angles, label sides and angles with their measures or with x, add heights, right-angle squares and congruence marks, then copy it into a worksheet or test.',
+    keywords: [
+      'triangle', 'triangles', 'right triangle', 'acute', 'obtuse', 'scalene', 'isosceles', 'equilateral', 'angle',
+      'angles', 'side lengths', 'to scale', 'scaled', 'diagram', 'geometry', 'trigonometry', 'trig', 'sohcahtoa', 'sine',
+      'cosine', 'tangent', 'law of sines', 'law of cosines', 'pythagorean theorem', 'hypotenuse', 'special right triangles',
+      '30-60-90', '45-45-90', 'similar triangles', 'congruent', 'tick marks', 'altitude', 'height', 'area', 'sss', 'sas',
+      'asa', 'aas', 'ssa', 'ambiguous case', 'labels', 'printable',
+    ],
+    Preview: TrianglePreview,
   },
 ]
 

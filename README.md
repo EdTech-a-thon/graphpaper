@@ -14,6 +14,11 @@ and `docs/adr/` for decisions.
   chart and axis titles (text or a blank line for students), axis labels, and
   a Figma-style end cap for each end of each axis. Presets, undo/redo, copy
   image, PNG/SVG download and copy link.
+- `/triangle` **Triangle Generator**: a triangle drawn to scale from any three
+  of its sides and angles (typed with fractions or √), solved for the rest.
+  Each side and angle is labeled with its measure, typed math like x, or
+  nothing, with congruence marks; heights, right-angle squares, a unit,
+  rounding, base side, flip and turn. Labels can be dragged on the figure.
 - `/about`, `/privacy`, `/sitemap.xml`, `/robots.txt`
 
 Every page has the top bar: the site name, the current generator, and a

@@ -1,6 +1,6 @@
 # Caret for math input
 
-Teachers type inequalities (−2 < x ≤ 5, x < −1 or x ≥ 3) and range values (π/4, 1/3) that should look like math as they type, so math input uses Caret, a friend's extensible math-input library, rather than plain text boxes or MathLive. Anything general, such as comparisons, and/or, π, exponents, evaluating with variables, string ↔ Doc serialization, typing rules, the editing controller (`Editor`) and the Svelte field (`@caret-js/svelte`), is built inside Caret. Math Figures keeps only what is specific to figures, such as turning an inequality into intervals and drawing them.
+Teachers type inequalities (−2 < x ≤ 5, x < −1 or x ≥ 3) and range values (π/4, 1/3) that should look like math as they type, so math input uses Caret, a friend's extensible math-input library, rather than plain text boxes or MathLive. Anything general, such as comparisons, and/or, π, exponents, square roots, evaluating with variables, string ↔ Doc serialization, typing rules, the editing controller (`Editor`) and the Svelte field (`@caret-js/svelte`), is built inside Caret. Math Figures keeps only what is specific to figures, such as turning an inequality into intervals and drawing them.
 
 Caret is unpublished and its packages don't build on install, so we work on a local clone of Caret on its own branch and commit its built packages here as tarballs (`vendor/caret-*.tgz`, referenced with `file:`). Nothing is pushed to Caret's repo; what we build and find is reported to its author by hand.
 
