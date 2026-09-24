@@ -39,8 +39,8 @@ export function buildLine(s) {
     ticks.push({ v, major: numbered || !s.every, label: numbered ? numberLabel(v, numbering) : null })
   }
 
-  // The inequality graph, clipped to the line.
-  const graph = set ?? []
+  // Every row's graph, clipped to the line.
+  const graph = set
   const endpoints = new Map() // value -> closed; an endpoint shared by two parts is drawn once
   for (const { lo, hi } of graph) {
     for (const b of [lo, hi]) {
@@ -49,7 +49,7 @@ export function buildLine(s) {
   }
   // An endpoint without a number under it gets one above it, clear of the tick
   // numbers, so the figure is never ambiguous. It's written the way the
-  // inequality was typed, so x < π/2 is labeled π/2.
+  // equations were typed, so x < π/2 is labeled π/2.
   const onNumber = (v) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
   const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, endpointNumbering) }))
 

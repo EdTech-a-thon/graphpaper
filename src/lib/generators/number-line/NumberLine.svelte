@@ -17,7 +17,7 @@
   width={g.width}
   height={g.height}
   role="img"
-  aria-label={settings.inequality || 'Number line'}
+  aria-label={settings.equations.filter((e) => e.trim()).join('; ') || 'Number line'}
 >
   <defs>
     <!-- The line's arrows, one at each end. -->

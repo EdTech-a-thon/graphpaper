@@ -33,8 +33,17 @@ describe('parseInequality', () => {
     ['no solution', 'empty'],
     ['t >= 3pi/2', `[${(3 * Math.PI) / 2}, Infinity)`],
     ['-1/2 < θ < 1/2', '(-0.5, 0.5)'],
+    ['3', '{3}'],
+    ['4, -1, 2.5', '{-1} ∪ {2.5} ∪ {4}'],
+    ['2, 2', '{2}'],
+    ['-pi/2', `{${-Math.PI / 2}}`],
   ])('%s', (text, expected) => {
     expect(show(parseInequality(text))).toBe(expected)
+  })
+
+  test('tells points from equations', () => {
+    expect(parseInequality('-1, 3').points).toBe(true)
+    expect(parseInequality('x = 3').points).toBe(false)
   })
 
   test('reports the letter', () => {
@@ -49,6 +58,7 @@ describe('parseInequality', () => {
     ['x <', 'Each side of an equation needs a number'],
     ['hello', 'Try an equation'],
     ['x < 1/0', 'Each side of an equation needs a number'],
+    ['(2, 3)', 'A point on a number line is one number'],
   ])('explains what is wrong with %s', (text, start) => {
     expect(parseInequality(text).error).toMatch(new RegExp(`^${start}`))
   })

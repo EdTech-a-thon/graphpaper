@@ -4,7 +4,7 @@
   import NumberLine from './NumberLine.svelte'
   import { DEFAULT_SETTINGS, cleanSettings } from './settings.js'
 
-  const settings = cleanSettings({ ...DEFAULT_SETTINGS, from: '-5', to: '5', inequality: '-2 < x <= 3' })
+  const settings = cleanSettings({ ...DEFAULT_SETTINGS, from: '-5', to: '5', equations: ['-2 < x <= 3'] })
 </script>
 
 <NumberLine {settings} id="preview-number-line" />

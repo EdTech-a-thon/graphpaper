@@ -1,9 +1,9 @@
 <script>
-  // The Number Line Generator: presets, the inequality and the line's settings
+  // The Number Line Generator: presets, the equations and the line's settings
   // on the left, the figure card on the right. Settings are mirrored into the page
   // address so a bookmark or shared link brings back exactly this number line,
   // and the server renders that same line on first load.
-  import { Ruler } from '@lucide/svelte'
+  import { Plus, Ruler, X } from '@lucide/svelte'
   import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
@@ -17,10 +17,24 @@
   import { presetStore } from './presets.js'
   import { cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery } from './settings.js'
 
-  let settings = $state(settingsFromParams(page.url.searchParams))
+  // There's always a row to type the next equation in.
+  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [''] })
+
+  let settings = $state(withRow(settingsFromParams(page.url.searchParams)))
   const clean = $derived(cleanSettings(settings))
   const query = $derived(settingsToQuery(clean))
   const line = $derived(readLine(clean))
+
+  // A new row, unless the last one is still empty, which gets the focus instead.
+  function addRow() {
+    if (settings.equations.at(-1)?.trim() !== '') settings.equations.push('')
+    const i = settings.equations.length - 1
+    requestAnimationFrame(() => document.getElementById(`eq-${i}`)?.focus())
+  }
+  function removeRow(i) {
+    settings.equations.splice(i, 1)
+    if (!settings.equations.length) settings.equations.push('')
+  }
 
   // The router can't replace the address until the page has hydrated, which
   // matters when a link arrives written differently from how we'd write it.
@@ -33,7 +47,7 @@
 
   const history = createHistory({
     read: () => $state.snapshot(clean),
-    write: (snap) => (settings = snap),
+    write: (snap) => (settings = withRow(snap)),
     keyOf: settingsToQuery,
     tidy: cleanSettings,
     storageKey: 'mathfigures.number-line.history',
@@ -64,7 +78,7 @@
   })
 
   function applyPreset(preset) {
-    settings = $state.snapshot(preset)
+    settings = withRow(cleanSettings($state.snapshot(preset)))
   }
 
   let svg = $state()
@@ -80,25 +94,30 @@
         <Presets store={presetStore} same={sameFigure} settings={clean} onapply={applyPreset} />
       </section>
 
-      <section class="card inequality">
-        <div class="field">
-          <div class="head-row">
-            <label class="card-head flush" for="inequality">Equation</label>
-            <HelpTip id="equation-tip" label="How to type an equation">
-              Try x &lt; −1 or x ≥ 3, x ≠ 2, all real numbers or no solution. Type &lt;= for ≤, != for ≠, pi for π and / for a
-              fraction. Leave it empty for a blank line.
-            </HelpTip>
-          </div>
-          <MathInput
-            kind="inequality"
-            id="inequality"
-            placeholder="−2 < x ≤ 5"
-            aria-invalid={!!line.problems.inequality}
-            aria-describedby={line.problems.inequality ? 'equation-problem' : undefined}
-            bind:value={settings.inequality}
-          />
+      <section class="card equations">
+        <div class="head-row">
+          <h2 class="card-head flush">Equations</h2>
+          <HelpTip id="equation-tip" label="How to type an equation">
+            Try x &lt; −1 or x ≥ 3, x ≠ 2, all real numbers or no solution, or points like 3 or −1, 2.5, π/2. Type &lt;= for ≤,
+            != for ≠, pi for π and / for a fraction. Leave it empty for a blank line.
+          </HelpTip>
         </div>
-        {#if line.problems.inequality}<p id="equation-problem" class="help problem">{line.problems.inequality}</p>{/if}
+        {#each settings.equations as _, i}
+          <div class="row">
+            <MathInput
+              kind="inequality"
+              id="eq-{i}"
+              aria-label="Equation {i + 1}"
+              placeholder={i === 0 ? '−2 < x ≤ 5' : ''}
+              aria-invalid={!!line.rows[i]?.problem}
+              aria-describedby={line.rows[i]?.problem ? `eq-${i}-problem` : undefined}
+              bind:value={settings.equations[i]}
+            />
+            <button class="icon-btn" aria-label="Remove equation {i + 1}" data-tip="Remove" onclick={() => removeRow(i)}><X size={17} /></button>
+          </div>
+          {#if line.rows[i]?.problem}<p id="eq-{i}-problem" class="help problem">{line.rows[i].problem}</p>{/if}
+        {/each}
+        <button class="add" onclick={addRow}><Plus size={16} aria-hidden="true" /> Add equation</button>
       </section>
 
       <section class="card sections">
@@ -160,9 +179,16 @@
   .card-head.flush { padding: 0; }
   .sections { overflow: hidden; }
 
-  .inequality { padding: 1rem 1.1rem; }
-  .inequality .field { margin-bottom: 0; }
+  .equations { padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .head-row { display: flex; align-items: center; justify-content: space-between; }
+  .row { display: flex; align-items: center; gap: 0.25rem; }
+  .row > :global(.caret-field) { flex: 1; min-width: 0; margin-right: 0.2rem; }
+  .equations .help { margin: -0.2rem 0 0; }
+  .add {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.6rem;
+    border: 1.5px dashed var(--border); border-radius: 999px; background: none; color: var(--blue-dark); font-weight: 700; font-size: 0.85rem;
+  }
+  .add:hover { background: var(--blue-soft); }
   .help { margin: 0.45rem 0 0; font-size: 0.84rem; color: var(--muted); }
   .help.problem { color: var(--red); font-weight: 600; }
 

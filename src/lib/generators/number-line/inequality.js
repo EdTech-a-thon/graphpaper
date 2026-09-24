@@ -1,8 +1,9 @@
 // Reading what a teacher types, with Caret (see docs/adr/0002-caret-for-math-input.md):
 // an inequality becomes the set of numbers it's true for, as a list of intervals,
-// and a range value like "3π/2" becomes a number. Runs on the server too.
+// points like "3" or "−1, 2.5" become that set too (one closed dot each), and a
+// range value like "3π/2" becomes a number. Runs on the server too.
 
-import { ComparisonNode, KeywordNode, LogicNode, VariableNode, evaluate } from '@caret-js/math'
+import { CommaListNode, ComparisonNode, KeywordNode, LogicNode, ParenthesesChildTag, VariableNode, evaluate } from '@caret-js/math'
 import { fromText, parsers } from '$lib/shared/math.js'
 
 export { parseNumber } from '$lib/shared/math.js'
@@ -88,7 +89,7 @@ function setOf(node, vars) {
     }
     return set
   }
-  throw new ReadError('Try an equation like −2 < x ≤ 5 or x < −1 or x ≥ 3.')
+  throw new ReadError('Try an equation like −2 < x ≤ 5 or x < −1 or x ≥ 3, or points like 3 or −1, 2.5.')
 }
 
 function number(node) {
@@ -97,19 +98,31 @@ function number(node) {
   return v
 }
 
+/** Points typed as numbers, like 3 or −1, 2.5, π/2, as their values; null when it isn't a list of numbers. */
+function pointsOf(text) {
+  const node = parsers.equation.parse(fromText(text))
+  if (node instanceof CommaListNode && node.hasTag(ParenthesesChildTag)) {
+    throw new ReadError('A point on a number line is one number, like 3 or −1/2. For more than one: 3, −1, 5/2.')
+  }
+  const values = (node instanceof CommaListNode ? node.expressions : [node]).map((n) => evaluate(n))
+  return values.every((v) => v !== null && Number.isFinite(v)) ? values : null
+}
+
 /**
- * Read an inequality. Blank text is a blank number line (set: null).
- * @returns {{ set: Interval[] | null, variable: string | null, error: string | null }}
+ * Read an inequality, or points. Blank text is a blank number line (set: null).
+ * @returns {{ set: Interval[] | null, variable: string | null, points: boolean, error: string | null }}
  */
 export function parseInequality(text) {
-  if (!String(text ?? '').trim()) return { set: null, variable: null, error: null }
+  if (!String(text ?? '').trim()) return { set: null, variable: null, points: false, error: null }
   const vars = new Set()
   try {
+    const points = pointsOf(text)
+    if (points) return { set: union(points.map((v) => ({ lo: { v, closed: true }, hi: { v, closed: true } })), []), variable: null, points: true, error: null }
     const set = setOf(parsers.inequality.parse(fromText(text)), vars)
-    if (vars.size > 1) return { set: null, variable: null, error: `Use one letter throughout, not ${[...vars].join(' and ')}.` }
-    return { set, variable: [...vars][0] ?? null, error: null }
+    if (vars.size > 1) return { set: null, variable: null, points: false, error: `Use one letter throughout, not ${[...vars].join(' and ')}.` }
+    return { set, variable: [...vars][0] ?? null, points: false, error: null }
   } catch (e) {
-    if (e instanceof ReadError) return { set: null, variable: null, error: e.message }
+    if (e instanceof ReadError) return { set: null, variable: null, points: false, error: e.message }
     throw e
   }
 }
