@@ -87,3 +87,45 @@ _Avoid_: Format, appearance, theme
 **Endpoint**:
 Where an equation's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).
 _Avoid_: Dot, point, boundary
+
+### Triangles
+
+**Triangle**:
+A figure of one triangle, drawn to scale from the measures the teacher gives and labeled for students. Its generator is the Triangle Generator.
+_Avoid_: Shape, polygon, diagram, drawing
+
+**Part**:
+Any vertex, side, angle or extra line of a triangle: something that can carry a label or a marking.
+_Avoid_: Element, component, piece
+
+**Vertex name**:
+The letter at a corner, such as A, B or C. Each can be renamed or left blank, and the triangle's measures are named after them (∠B, AB).
+_Avoid_: Point, corner label
+
+**Measure**:
+A side's length or an angle's size, in degrees. A **given** measure is one the teacher types; any three that make a triangle are enough. A **solved** measure is worked out from the givens. Drawing to scale means proportional, not true size on paper.
+_Avoid_: Value, dimension, size
+
+**Part label**:
+What's written at a part: nothing, its measure (such as 12 or 24°, with the figure's unit on lengths), or text the teacher types, such as x or 2y + 1. It replaces the text boxes teachers otherwise lay over a drawing.
+_Avoid_: Text box, caption, annotation, label (alone; axes have their own labels)
+
+**Unit**:
+One optional unit for the whole triangle, such as cm or ft, added to every length shown as its measure.
+_Avoid_: Scale
+
+**Extra line**:
+A line drawn onto a triangle that isn't one of its sides. For now the only one is a height: dropped from a vertex to the opposite side, which is extended when the height lands outside the triangle. The point where it lands can be given a name, such as D. It can be solid, dashed or dotted, like a graphed line.
+_Avoid_: Auxiliary line, segment, construction
+
+**Marking**:
+A standard geometry symbol on a part: congruence ticks on sides, congruence arcs on angles, or a right-angle square. The teacher sets congruence marks by hand, never from equal measures, so they don't give answers away. An angle gets an arc only when it has a label or congruence arcs. A right-angle square appears on its own at every 90° angle, including where a height meets a side, and can be turned off.
+_Avoid_: Symbol, annotation, tick (a number line's tick is different)
+
+**Base side**:
+The side that sits flat along the bottom before any flip or rotation, AB unless the teacher picks another.
+_Avoid_: Bottom, base (alone; a height's base is the side it meets)
+
+**Other triangle**:
+The second triangle two sides and a non-included angle can make (the ambiguous case). The generator draws the one whose unknown angle is acute unless the teacher switches to the other.
+_Avoid_: Second solution, alternate
