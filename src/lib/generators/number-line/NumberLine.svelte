@@ -40,6 +40,9 @@
     {#each g.segments as s}<line x1={s.x1} y1={g.axis.y} x2={s.x2} y2={g.axis.y} />{/each}
   </g>
   {#each g.arrows as d}<path {d} fill={INK} />{/each}
+  {#each g.crosses as cx}
+    <path d="M{cx - 7},{g.axis.y - 7} L{cx + 7},{g.axis.y + 7} M{cx - 7},{g.axis.y + 7} L{cx + 7},{g.axis.y - 7}" stroke={INK} stroke-width="3" stroke-linecap="round" />
+  {/each}
   {#each g.endpoints as e}
     <circle cx={e.x} cy={g.axis.y} r={g.r} fill={e.closed ? INK : '#fff'} stroke={INK} stroke-width="2.5" />
   {/each}

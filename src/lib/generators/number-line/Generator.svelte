@@ -74,7 +74,8 @@
       `${n(from)} to ${n(to)}`,
       `by ${n(step)}`,
       clean.every ? (clean.every === 1 ? 'numbered' : `numbered every ${clean.every}`) : 'unnumbered',
-    ].join(' · ')
+      clean.points === 'cross' && line.points.length && 'points as crosses',
+    ].filter(Boolean).join(' · ')
   })
 
   function applyPreset(preset) {
@@ -137,6 +138,13 @@
             Numbers
             <select bind:value={settings.every}>
               {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
+            </select>
+          </label>
+          <label class="field">
+            Points
+            <select bind:value={settings.points}>
+              <option value="dot">Dots</option>
+              <option value="cross">Crosses</option>
             </select>
           </label>
         </Section>

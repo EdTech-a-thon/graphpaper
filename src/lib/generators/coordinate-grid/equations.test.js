@@ -122,10 +122,14 @@ describe('equations in the page address', () => {
     expect(settingsFromParams(new URLSearchParams(q)).equations.map((r) => r.text)).toEqual(['y=2x+1', '(1,2),(3,4)'])
   })
   test('a row keeps its style, and only what differs from the default is written', () => {
-    const row = { text: 'y=2x+1', color: 'red', line: 'dashed', arrows: 'both' }
+    const row = { text: 'y=2x+1', color: 'red', line: 'dashed', arrows: 'both', point: 'dot' }
     const q = settingsToQuery(cleanSettings({ ...DEFAULT_SETTINGS, equations: [row] }))
     expect(new URLSearchParams(q).get('eq')).toBe('y=2x+1|color=red|line=dashed')
     expect(settingsFromParams(new URLSearchParams(q)).equations).toEqual([row])
+  })
+  test('points can be crosses', () => {
+    expect(rowFromParam('(1,2)|point=cross')).toEqual({ ...ROW_DEFAULTS, text: '(1,2)', point: 'cross' })
+    expect(rowFromParam('(1,2)|point=star').point).toBe('dot')
   })
   test('unknown styles fall back to the defaults', () => {
     expect(rowFromParam('(1,2)|color=plaid|arrows=left')).toEqual({ ...ROW_DEFAULTS, text: '(1,2)', arrows: 'left' })

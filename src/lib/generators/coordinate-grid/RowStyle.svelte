@@ -1,12 +1,12 @@
 <script>
   // The button before an equation, drawn the way that equation is graphed (its
-  // color, line style and arrows, or dots for points), so each row reads as
+  // color, line style and arrows, or dots or crosses for points), so each row reads as
   // its own line on the grid. It opens a small popup to change those. Fixed-position like
   // CapPicker's menu, so the scrolling settings column can't clip it.
   import { tick } from 'svelte'
-  import { ARROWS, COLORS, LINE_STYLES } from './equations.js'
+  import { ARROWS, COLORS, LINE_STYLES, POINT_STYLES } from './equations.js'
 
-  // row: { color, line, arrows }, edited in place. isPoints: only color applies.
+  // row: { color, line, arrows, point }, edited in place. isPoints: only color and point apply.
   let { row, label, id, isPoints = false } = $props()
 
   let open = $state(false)
@@ -53,8 +53,13 @@
   {@const ink = COLORS[row.color]}
   <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
     {#if isPoints}
-      <circle cx="7" cy="16" r="3" fill={ink} />
-      <circle cx="17" cy="8" r="3" fill={ink} />
+      {#each [[7, 16], [17, 8]] as [x, y]}
+        {#if row.point === 'cross'}
+          <path d="M{x - 3.2},{y - 3.2} L{x + 3.2},{y + 3.2} M{x - 3.2},{y + 3.2} L{x + 3.2},{y - 3.2}" stroke={ink} stroke-width="2" stroke-linecap="round" />
+        {:else}
+          <circle cx={x} cy={y} r="3" fill={ink} />
+        {/if}
+      {/each}
     {:else}
       {@const left = row.arrows === 'both' || row.arrows === 'left'}
       {@const right = row.arrows === 'both' || row.arrows === 'right'}
@@ -77,6 +82,16 @@
       stroke-dasharray={style === 'dashed' ? '6 4' : style === 'dotted' ? '0.01 4.5' : undefined}
       stroke-linecap={style === 'dotted' ? 'round' : 'butt'}
     />
+  </svg>
+{/snippet}
+
+{#snippet pointIcon(style)}
+  <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true">
+    {#if style === 'cross'}
+      <path d="M10,2 L18,10 M10,10 L18,2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+    {:else}
+      <circle cx="14" cy="6" r="4" fill="currentColor" />
+    {/if}
   </svg>
 {/snippet}
 
@@ -130,7 +145,18 @@
         </div>
       </div>
 
-      {#if !isPoints}
+      {#if isPoints}
+        <div class="group">
+          <span class="name" id="{id}-point">Point</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="{id}-point">
+            {#each Object.entries(POINT_STYLES) as [v, name]}
+              <button type="button" role="radio" aria-checked={row.point === v} aria-label={name} title={name} class:on={row.point === v} onclick={() => (row.point = v)}>
+                {@render pointIcon(v)}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else}
         <div class="group">
           <span class="name" id="{id}-line">Line</span>
           <div class="segmented" role="radiogroup" aria-labelledby="{id}-line">

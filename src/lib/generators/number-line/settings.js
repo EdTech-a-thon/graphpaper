@@ -9,6 +9,7 @@ import { parseInequality, parseNumber } from './inequality.js'
 
 export const MAX_TICKS = 100
 export const EVERY = [1, 2, 4, 5, 10, 0] // number every nth tick; 0 = no numbers
+export const POINTS = ['dot', 'cross'] // how points are marked: a dot, or a cross as in France
 export const INK = '#111827'
 
 export const DEFAULT_SETTINGS = {
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS = {
   to: '10',
   step: '1',
   every: 1,
+  points: 'dot',
   equations: [], // what's graphed, one row each: an equation or inequality, or points
 }
 
@@ -35,6 +37,7 @@ export function cleanSettings(s) {
     to: text(s.to, d.to),
     step: text(s.step, d.step),
     every: oneOf(EVERY, Number(s.every), d.every),
+    points: oneOf(POINTS, s.points, d.points),
     equations: equations.map((e) => text(e, '')),
   }
 }
@@ -72,8 +75,9 @@ export function settingsFromParams(params) {
 }
 
 /**
- * What the settings mean: the range as numbers, each row as intervals (all of
- * them together in `set`, drawn over one another),
+ * What the settings mean: the range as numbers, each row as intervals (the
+ * equations' together in `set` and the points' values in `points`, all drawn
+ * over one another),
  * how to write the numbers of each (the way the teacher typed them: π as π,
  * fractions as fractions), and anything the teacher should fix, as messages
  * for the settings panel.
@@ -111,7 +115,8 @@ export function readLine(s) {
     }
     return { set: read.set, points: read.points, problem }
   })
-  const set = rows.flatMap((r) => r?.set ?? [])
+  const set = rows.flatMap((r) => (r && !r.points ? r.set ?? [] : []))
+  const points = rows.flatMap((r) => (r?.points ? r.set.map(({ lo }) => lo.v) : []))
 
-  return { range, numbering, endpointNumbering, set, rows, problems }
+  return { range, numbering, endpointNumbering, set, points, rows, problems }
 }

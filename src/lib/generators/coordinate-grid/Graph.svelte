@@ -56,7 +56,13 @@
     <path d={l.d} fill="none" stroke={l.color} stroke-width={l.width} stroke-dasharray={l.dash} stroke-linecap={l.cap} stroke-linejoin="round" />
     {#each l.heads as d}<path {d} fill={l.color} />{/each}
   {/each}
-  {#each g.dots as d}<circle cx={d.x} cy={d.y} r="4.5" fill={d.color} />{/each}
+  {#each g.dots as d}
+    {#if d.cross}
+      <path d="M{d.x - 5.5},{d.y - 5.5} L{d.x + 5.5},{d.y + 5.5} M{d.x - 5.5},{d.y + 5.5} L{d.x + 5.5},{d.y - 5.5}" stroke={d.color} stroke-width="2.4" stroke-linecap="round" />
+    {:else}
+      <circle cx={d.x} cy={d.y} r="4.5" fill={d.color} />
+    {/if}
+  {/each}
 
   <g font-family={SANS} font-size={g.fs} font-weight="bold" fill={INK} stroke="#fff" stroke-width="4" paint-order="stroke" stroke-linejoin="round">
     {#each g.numbers as n}<text x={n.x} y={n.y} text-anchor={n.anchor}>{n.text}</text>{/each}

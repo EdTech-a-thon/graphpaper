@@ -81,8 +81,12 @@ A straight line or curve drawn across a coordinate grid from an equation, with a
 _Avoid_: Plot, function, curve
 
 **Row style**:
-How one equation is drawn, set from the button before it, which shows a miniature of how the row is drawn: a color, a line style (solid, dashed or dotted) and which ends have arrows (both, neither, left or right; for an up-and-down line, left means the bottom). Points take only the color.
+How one equation is drawn, set from the button before it, which shows a miniature of how the row is drawn: a color, a line style (solid, dashed or dotted) and which ends have arrows (both, neither, left or right; for an up-and-down line, left means the bottom). Points take the color and a point mark: a dot, or a cross as French classrooms use.
 _Avoid_: Format, appearance, theme
+
+**Point mark**:
+How points are drawn: a dot or a cross. On a coordinate grid it's part of each points row's row style; on a number line it's one setting for every point on the line. It never changes an endpoint, whose open or closed circle has a meaning.
+_Avoid_: Marker, symbol, dot style
 
 **Endpoint**:
 Where an equation's graph stops at a number, drawn as an open circle (not included) or a closed circle (included).

@@ -22,7 +22,7 @@ const EPS = 1e-9
 const labelWidth = (l) => (l.text ?? (l.num.length > l.den.length ? l.num : l.den) + l.sign).length * CHAR
 
 export function buildLine(s) {
-  const { range, numbering, endpointNumbering, set, problems } = readLine(s)
+  const { range, numbering, endpointNumbering, set, points, problems } = readLine(s)
   const { from, to, step } = range
   const x = (v) => L + ((v - from) / (to - from)) * LINE
 
@@ -47,11 +47,15 @@ export function buildLine(s) {
       if (Number.isFinite(b.v) && b.v >= from - EPS && b.v <= to + EPS) endpoints.set(b.v, endpoints.get(b.v) || b.closed)
     }
   }
+  // Points are closed dots like x = 3, or crosses.
+  const shown = points.filter((v) => v >= from - EPS && v <= to + EPS)
+  const crosses = s.points === 'cross' ? shown : []
+  if (s.points !== 'cross') for (const v of shown) endpoints.set(v, true)
   // An endpoint without a number under it gets one above it, clear of the tick
   // numbers, so the figure is never ambiguous. It's written the way the
   // equations were typed, so x < π/2 is labeled π/2.
   const onNumber = (v) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
-  const extraLabels = [...endpoints.keys()].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, endpointNumbering) }))
+  const extraLabels = [...new Set([...endpoints.keys(), ...crosses])].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, endpointNumbering) }))
 
   const labels = ticks.filter((t) => t.label)
   const stacked = labels.some((l) => l.label.den)
@@ -105,11 +109,15 @@ export function buildLine(s) {
     fs: FS,
     r: R,
     axis: { x1: ends.left, x2: ends.right, y: axisY },
-    ticks: ticks.map((t) => ({ x: x(t.v), y1: axisY - (t.major ? TICK : MINOR), y2: axisY + (t.major ? TICK : MINOR) })),
+    // A cross replaces the tick it sits on, which would otherwise turn it into a star.
+    ticks: ticks
+      .filter((t) => !crosses.some((v) => Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v))))
+      .map((t) => ({ x: x(t.v), y1: axisY - (t.major ? TICK : MINOR), y2: axisY + (t.major ? TICK : MINOR) })),
     numbers,
     segments,
     arrows,
     endpoints: [...endpoints].map(([v, closed]) => ({ x: x(v), closed })),
+    crosses: crosses.map((v) => x(v)),
     problems,
   }
 }

@@ -161,14 +161,14 @@ export function buildGraph(settings) {
   else if (yBlank) blanks.push({ x1: ySideX, y1: midY - Math.min(100, gridH / 2), x2: ySideX, y2: midY + Math.min(100, gridH / 2) })
 
   // What the teacher graphed: each line or curve runs to the grid's edge, with
-  // an arrowhead where it leaves at the ends the teacher picked; points are dots.
+  // an arrowhead where it leaves at the ends the teacher picked; points are dots or crosses.
   const px = ({ x, y }) => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
   const box = { x0, x1, y0, y1 }
   const lines = []
   const dots = []
   const rows = settings.equations ?? []
   readEquations(rows.map((r) => r.text), box).forEach((read, i) => {
-    const { color, line: style, arrows } = rows[i]
+    const { color, line: style, arrows, point } = rows[i]
     const ink = COLORS[color]
     for (const run of read?.runs ?? []) {
       let pts = run.points.map(px)
@@ -191,7 +191,7 @@ export function buildGraph(settings) {
         width: style === 'dotted' ? 3.2 : 2.5, // round dots look lighter than a solid stroke
       })
     }
-    for (const pt of read?.points ?? []) dots.push({ ...px(pt), color: ink })
+    for (const pt of read?.points ?? []) dots.push({ ...px(pt), color: ink, cross: point === 'cross' })
   })
 
   return {

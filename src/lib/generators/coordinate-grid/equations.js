@@ -26,9 +26,11 @@ export const LINE_STYLES = { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted' 
 // Which ends of a line get an arrowhead. "left" is the end with the smaller x
 // (the bottom, for an up-and-down line).
 export const ARROWS = { both: 'Both ends', none: 'No arrows', left: 'Left end', right: 'Right end' }
-export const ROW_DEFAULTS = { text: '', color: 'black', line: 'solid', arrows: 'both' }
+// How points are marked: a dot, or a cross as in France.
+export const POINT_STYLES = { dot: 'Dot', cross: 'Cross' }
+export const ROW_DEFAULTS = { text: '', color: 'black', line: 'solid', arrows: 'both', point: 'dot' }
 
-const STYLE_KEYS = { color: COLORS, line: LINE_STYLES, arrows: ARROWS }
+const STYLE_KEYS = { color: COLORS, line: LINE_STYLES, arrows: ARROWS, point: POINT_STYLES }
 
 /** A row from a form, a stored preset or an older link (just its text). */
 export function cleanRow(r) {
