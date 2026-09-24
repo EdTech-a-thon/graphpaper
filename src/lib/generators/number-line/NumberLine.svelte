@@ -1,10 +1,10 @@
-<script>
+<script lang="ts">
   // The number line itself, as a self-contained SVG that prints crisply and
   // exports cleanly to PNG/SVG (fonts and colors are inline, no page CSS).
   import { buildLine } from './numberline.js'
-  import { INK } from './settings.js'
+  import { INK, type Settings } from './settings.js'
 
-  let { settings, svg = $bindable(), id = 'n' } = $props()
+  let { settings, svg = $bindable(), id = 'n' }: { settings: Settings; svg?: SVGSVGElement; id?: string } = $props()
 
   const g = $derived(buildLine(settings))
   const SANS = 'Arial, Helvetica, sans-serif'

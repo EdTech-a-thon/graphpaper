@@ -1,13 +1,16 @@
-<script>
+<script lang="ts">
   // The coordinate grid itself, as a self-contained SVG that prints crisply and
   // exports cleanly to PNG/SVG (fonts and colors are inline, no page CSS).
+  import type { Cap } from '$lib/shared/caps.js'
   import { buildGraph } from './graph.js'
+  import type { Settings } from './settings.js'
 
-  let { settings, svg = $bindable(), id = 'g' } = $props()
+  // id: prefixes the arrowheads' ids, which have to be unique on the page.
+  let { settings, svg = $bindable(), id = 'g' }: { settings: Settings; svg?: SVGSVGElement; id?: string } = $props()
 
   const g = $derived(buildGraph(settings))
   const INK = '#111827'
-  const cap = (c) => (c === 'none' ? undefined : `url(#${id}-${c})`)
+  const cap = (c: Cap) => (c === 'none' ? undefined : `url(#${id}-${c})`)
   const SANS = 'Arial, Helvetica, sans-serif'
   const SERIF = "'Times New Roman', Times, serif"
 </script>

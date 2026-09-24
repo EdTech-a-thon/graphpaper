@@ -1,8 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { solveTriangle } from './solve.js'
+import { solveTriangle, type Part, type Solved } from './solve.js'
+
+/** A result as the tests read it: the triangle's parts, or the problem (checked first). */
+type Result = Omit<Solved, 'problem'> & { problem: string | null }
 
 const none = { A: null, B: null, C: null, AB: null, BC: null, CA: null }
-const solve = (given, options) => solveTriangle({ ...none, ...given }, options)
+const solve = (given: Partial<Record<Part, number>>, options?: Parameters<typeof solveTriangle>[1]) =>
+  solveTriangle({ ...none, ...given }, options) as Result
 
 describe('enough measures', () => {
   test('two angles and the side between them (the teacher’s example)', () => {

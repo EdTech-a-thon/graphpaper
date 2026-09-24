@@ -1,15 +1,17 @@
-<script>
+<script lang="ts">
   // One piece of text on the graph: written text, a blank line for students
   // to write on (titles only), or nothing at all.
   import { Ban, PencilLine, Type } from '@lucide/svelte'
 
-  let { name, mode = $bindable(), text = $bindable(), placeholder = '', blank = true } = $props()
+  let {
+    name, mode = $bindable(), text = $bindable(), placeholder = '', blank = true,
+  }: { name: string; mode: string; text: string; placeholder?: string; blank?: boolean } = $props()
 
   const MODES = $derived([
     ['text', 'Text', Type],
-    ...(blank ? [['blank', 'Blank line', PencilLine]] : []),
+    ...(blank ? [['blank', 'Blank line', PencilLine] as const] : []),
     ['none', 'None', Ban],
-  ])
+  ] as const)
 </script>
 
 <div class="label-field">

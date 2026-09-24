@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // Request a generator: the same dialog as Help, with its own wording. Opened
   // from the search box or the directory through openRequest().
   import EmailDialog from './EmailDialog.svelte'

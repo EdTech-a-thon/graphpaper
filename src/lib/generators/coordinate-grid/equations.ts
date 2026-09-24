@@ -4,6 +4,7 @@
 // y = 2^x, or points like (2, 3) or (1, 2), (3, 4). Not yet: sideways curves,
 // circles and shaded inequalities. Runs on the server too.
 
+import type { TreeNode } from '@caret-js/core'
 import { CommaListNode, ComparisonNode, ParenthesesChildTag, VariableNode, evaluate } from '@caret-js/math'
 import { fromText, parsers } from '$lib/shared/math.js'
 import { fmt } from '$lib/shared/numbering.js'
@@ -28,31 +29,51 @@ export const LINE_STYLES = { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted' 
 export const ARROWS = { both: 'Both ends', none: 'No arrows', left: 'Left end', right: 'Right end' }
 // How points are marked: a dot, or a cross as in France.
 export const POINT_STYLES = { dot: 'Dot', cross: 'Cross' }
-export const ROW_DEFAULTS = { text: '', color: 'black', line: 'solid', arrows: 'both', point: 'dot' }
+
+export type Color = keyof typeof COLORS
+export type LineStyle = keyof typeof LINE_STYLES
+export type Arrows = keyof typeof ARROWS
+export type PointStyle = keyof typeof POINT_STYLES
+/** One equation row: what's typed, and how it's drawn. */
+export type Row = { text: string; color: Color; line: LineStyle; arrows: Arrows; point: PointStyle }
+
+export const ROW_DEFAULTS: Row = { text: '', color: 'black', line: 'solid', arrows: 'both', point: 'dot' }
 
 const STYLE_KEYS = { color: COLORS, line: LINE_STYLES, arrows: ARROWS, point: POINT_STYLES }
+type StyleKey = keyof typeof STYLE_KEYS
+
+/** A point, in the grid's own values. */
+export type Point = { x: number; y: number }
+/** The line a·x + b·y + c = 0. */
+export type Line = { a: number; b: number; c: number }
+/** The stretch of values a grid covers. */
+export type Box = { x0: number; x1: number; y0: number; y1: number }
+/** Part of a line or curve inside the grid, left to right, and whether each end leaves through the grid's edge. */
+export type Run = { points: Point[]; edges: [boolean, boolean] }
+/** One row, read: what it draws, or a problem for the settings panel. */
+export type ReadRow = { problem: string; runs?: undefined; points?: undefined } | { runs: Run[]; problem?: undefined; points?: undefined } | { points: Point[]; problem: string | null; runs?: undefined }
 
 /** A row from a form, a stored preset or an older link (just its text). */
-export function cleanRow(r) {
+export function cleanRow(r: any): Row {
   if (typeof r !== 'object' || r === null) return { ...ROW_DEFAULTS, text: String(r ?? '') }
-  const out = { ...ROW_DEFAULTS, text: String(r.text ?? '') }
-  for (const [k, list] of Object.entries(STYLE_KEYS)) if (r[k] in list) out[k] = r[k]
+  const out: Row = { ...ROW_DEFAULTS, text: String(r.text ?? '') }
+  for (const [k, list] of Object.entries(STYLE_KEYS) as [StyleKey, object][]) if (r[k] in list) (out as Record<StyleKey, string>)[k] = r[k]
   return out
 }
 
 /** A row as one value in the page address: "y=2x+1", or "y=2x+1|color=red|line=dashed". */
-export function rowToParam(r) {
-  const style = Object.keys(STYLE_KEYS).filter((k) => r[k] !== ROW_DEFAULTS[k]).map((k) => `${k}=${r[k]}`)
+export function rowToParam(r: Row): string {
+  const style = (Object.keys(STYLE_KEYS) as StyleKey[]).filter((k) => r[k] !== ROW_DEFAULTS[k]).map((k) => `${k}=${r[k]}`)
   return [r.text.trim(), ...style].join('|')
 }
 
-export function rowFromParam(value) {
+export function rowFromParam(value: string): Row {
   const [text, ...style] = String(value).split('|')
   return cleanRow({ text, ...Object.fromEntries(style.map((kv) => kv.split('='))) })
 }
 
 /** A bracketed pair like (2, 3) as { x, y }. */
-function point(node) {
+function point(node: TreeNode): Point {
   if (!(node instanceof CommaListNode && node.hasTag(ParenthesesChildTag) && node.expressions.length === 2)) {
     throw new ReadError('Write each point as (x, y), like (2, 3). For more than one, put commas between them: (2, 3), (1, 4).')
   }
@@ -64,7 +85,7 @@ function point(node) {
 }
 
 /** Is v close enough to w, relative to their size? */
-const near = (v, w) => Math.abs(v - w) <= 1e-7 * Math.max(1, Math.abs(v), Math.abs(w))
+const near = (v: number, w: number) => Math.abs(v - w) <= 1e-7 * Math.max(1, Math.abs(v), Math.abs(w))
 // Where an equation is tested for its shape: spread out, and off the usual integers.
 const XS = [-7.3, -3.7, -1.2, 0.4, 1.9, 2.9, 5.3, 8.6]
 
@@ -74,14 +95,14 @@ const XS = [-7.3, -3.7, -1.2, 0.4, 1.9, 2.9, 5.3, 8.6]
  * Both sides are evaluated at test points to see which, so any way of writing
  * it works: y − 3 = (x − 1)², for one.
  */
-function graphOf(node) {
+function graphOf(node: ComparisonNode): { line: Line; curve?: undefined } | { curve: (x: number) => number | null; line?: undefined } {
   if (node.operators.length > 1) throw new ReadError('Use one = sign, like y = 2x + 1.')
   if (node.operators[0] !== '=') throw new ReadError('Shading inequalities isn’t here yet. Try an equation like y = 2x + 1.')
   for (const n of node.traverse()) {
     if (n instanceof VariableNode && n.name !== 'x' && n.name !== 'y') throw new ReadError(`Use x and y, not ${n.name}.`)
   }
   const [left, right] = node.operands
-  const F = (x, y) => {
+  const F = (x: number, y: number) => {
     const l = evaluate(left, { x, y })
     const r = evaluate(right, { x, y })
     return l === null || r === null || !Number.isFinite(l) || !Number.isFinite(r) ? null : l - r
@@ -89,19 +110,20 @@ function graphOf(node) {
 
   // A straight line: F is a·x + b·y + c everywhere.
   const c = F(0, 0)
-  const a = c === null ? null : F(1, 0) - c
-  const b = c === null ? null : F(0, 1) - c
+  // (F(1, 0) and F(0, 1) are checked before a and b are used.)
+  const a = c === null ? null : F(1, 0)! - c
+  const b = c === null ? null : F(0, 1)! - c
   const linear =
     c !== null && F(1, 0) !== null && F(0, 1) !== null &&
     [[2, -3], [-1.5, 4.25], [7, 11], [-6.2, -2.7]].every(([x, y]) => {
       const v = F(x, y)
-      return v !== null && near(v, a * x + b * y + c)
+      return v !== null && near(v, a! * x + b! * y + c)
     })
   if (linear) {
-    if (Math.abs(a) < 1e-12 && Math.abs(b) < 1e-12) {
-      throw new ReadError(Math.abs(c) < 1e-12 ? 'That’s true for every point, so there’s nothing to draw.' : 'That’s never true, so there’s nothing to draw.')
+    if (Math.abs(a!) < 1e-12 && Math.abs(b!) < 1e-12) {
+      throw new ReadError(Math.abs(c!) < 1e-12 ? 'That’s true for every point, so there’s nothing to draw.' : 'That’s never true, so there’s nothing to draw.')
     }
-    return { line: { a, b, c } }
+    return { line: { a: a!, b: b!, c: c! } }
   }
 
   // A curve y = f(x): at each x, F is A·y + B, so y = −B / A.
@@ -134,9 +156,10 @@ function graphOf(node) {
 
 /**
  * Read one row. Blank text draws nothing.
- * @returns {{ line?: { a: number, b: number, c: number }, curve?: (x: number) => number | null, points?: { x: number, y: number }[], error?: string } | null}
  */
-export function parseEquation(text) {
+export function parseEquation(
+  text: string,
+): { line?: Line; curve?: (x: number) => number | null; points?: Point[]; error?: string } | null {
   if (!String(text ?? '').trim()) return null
   try {
     const node = parsers.equation.parse(fromText(text))
@@ -156,13 +179,13 @@ export function parseEquation(text) {
  * The line a·x + b·y + c = 0 clipped to a box of values, as its two ends, or
  * null when it misses the box.
  */
-export function clipLine({ a, b, c }, box) {
+export function clipLine({ a, b, c }: Line, box: Box): [Point, Point] | null {
   // Walk along the line from a point on it: p + t·d, d = (b, −a).
-  const p = Math.abs(b) > Math.abs(a) ? { x: 0, y: -c / b } : { x: -c / a, y: 0 }
-  const d = { x: b, y: -a }
+  const p: Point = Math.abs(b) > Math.abs(a) ? { x: 0, y: -c / b } : { x: -c / a, y: 0 }
+  const d: Point = { x: b, y: -a }
   let lo = -Infinity
   let hi = Infinity
-  for (const [k, min, max] of [['x', box.x0, box.x1], ['y', box.y0, box.y1]]) {
+  for (const [k, min, max] of [['x', box.x0, box.x1], ['y', box.y0, box.y1]] as const) {
     if (Math.abs(d[k]) < 1e-12) {
       if (p[k] < min - 1e-9 || p[k] > max + 1e-9) return null
       continue
@@ -172,26 +195,27 @@ export function clipLine({ a, b, c }, box) {
     hi = Math.min(hi, t2)
   }
   if (!(hi - lo > 1e-9)) return null
-  const at = (t) => ({ x: p.x + t * d.x, y: p.y + t * d.y })
+  const at = (t: number): Point => ({ x: p.x + t * d.x, y: p.y + t * d.y })
   return [at(lo), at(hi)]
 }
 
-const inBox = ({ x, y }, box) => x >= box.x0 - EPS && x <= box.x1 + EPS && y >= box.y0 - EPS && y <= box.y1 + EPS
+const inBox = ({ x, y }: Point, box: Box) => x >= box.x0 - EPS && x <= box.x1 + EPS && y >= box.y0 - EPS && y <= box.y1 + EPS
 
 /** Left end first; for an up-and-down line, the bottom. */
-const leftFirst = (p, q) => (Math.abs(p.x - q.x) > EPS ? p.x < q.x : p.y < q.y)
+const leftFirst = (p: Point, q: Point) => (Math.abs(p.x - q.x) > EPS ? p.x < q.x : p.y < q.y)
 
 /**
  * The parts of y = f(x) inside the box, each left to right, with whether each
  * end leaves through the box's edge (where an arrow goes) rather than stopping
  * where f does (like √x at 0). Sampled finely enough to draw smoothly.
  */
-export function curveRuns(f, box, samples = 480) {
-  const runs = []
-  let run = null
-  let prev = null
-  const inside = (y) => y !== null && Number.isFinite(y) && y >= box.y0 - EPS && y <= box.y1 + EPS
-  const crossing = (a, b) => {
+export function curveRuns(f: (x: number) => number | null, box: Box, samples = 480): Run[] {
+  type Sample = { x: number; y: number | null; in: boolean }
+  const runs: Run[] = []
+  let run: Run | null = null
+  let prev: Sample | null = null
+  const inside = (y: number | null) => y !== null && Number.isFinite(y) && y >= box.y0 - EPS && y <= box.y1 + EPS
+  const crossing = (a: Sample & { y: number }, b: Sample & { y: number }): Point => {
     const edge = b.y > box.y1 || a.y > box.y1 ? box.y1 : box.y0
     const t = (edge - a.y) / (b.y - a.y)
     return { x: a.x + t * (b.x - a.x), y: edge }
@@ -199,22 +223,22 @@ export function curveRuns(f, box, samples = 480) {
   for (let i = 0; i <= samples; i++) {
     const x = box.x0 + ((box.x1 - box.x0) * i) / samples
     const y = f(x)
-    const s = { x, y: y === null || !Number.isFinite(y) ? null : y, in: inside(y) }
+    const s: Sample = { x, y: y === null || !Number.isFinite(y) ? null : y, in: inside(y) }
     if (s.in && (!prev || !prev.in)) {
       // Coming in: from the left edge, across the top or bottom, or where f starts.
       run = { points: [], edges: [!prev || prev.y !== null, false] }
-      if (prev && prev.y !== null) run.points.push(crossing(prev, s))
+      if (prev && prev.y !== null) run.points.push(crossing(prev as Sample & { y: number }, s as Sample & { y: number }))
       runs.push(run)
     }
-    if (s.in) run.points.push({ x: s.x, y: s.y })
+    if (s.in) run!.points.push({ x: s.x, y: s.y! })
     else if (prev?.in) {
       // Going out: across the top or bottom, or where f stops.
-      if (s.y !== null) run.points.push(crossing(prev, s))
-      run.edges[1] = s.y !== null
+      if (s.y !== null) run!.points.push(crossing(prev as Sample & { y: number }, s as Sample & { y: number }))
+      run!.edges[1] = s.y !== null
     }
     prev = s
   }
-  if (prev?.in) run.edges[1] = true // out the right edge
+  if (prev?.in) run!.edges[1] = true // out the right edge
   return runs.filter((r) => r.points.length > 1)
 }
 
@@ -223,22 +247,22 @@ export function curveRuns(f, box, samples = 480) {
  * or curve inside the grid (runs), the points on it, and a problem for the
  * settings panel when a row can't be read or doesn't show.
  */
-export function readEquations(texts, box) {
-  return texts.map((text) => {
+export function readEquations(texts: string[], box: Box): (ReadRow | null)[] {
+  return texts.map((text): ReadRow | null => {
     const read = parseEquation(text)
     if (!read) return null
     if (read.error) return { problem: read.error }
     if (read.line || read.curve) {
-      let runs = []
+      let runs: Run[] = []
       if (read.line) {
         const ends = clipLine(read.line, box)
         if (ends) runs = [{ points: leftFirst(...ends) ? ends : [ends[1], ends[0]], edges: [true, true] }]
-      } else runs = curveRuns(read.curve, box)
+      } else runs = curveRuns(read.curve!, box)
       return runs.length ? { runs } : { problem: 'That graph misses the grid. Widen the axes to show it.' }
     }
-    const off = read.points.find((pt) => !inBox(pt, box))
+    const off = read.points!.find((pt) => !inBox(pt, box))
     return {
-      points: read.points.filter((pt) => inBox(pt, box)),
+      points: read.points!.filter((pt) => inBox(pt, box)),
       problem: off ? `(${fmt(off.x)}, ${fmt(off.y)}) is off the grid. Widen the axes to show it.` : null,
     }
   })

@@ -8,9 +8,9 @@
 // directions (along and across a side, say), so it follows the part when the
 // triangle is turned, flipped or reshaped.
 
-import { layoutMath } from '$lib/shared/mathSvg.js'
-import { ANGLES, OPPOSITE, sideOf } from './solve.js'
-import { readMoved } from './settings.js'
+import { layoutMath, type MathBox } from '$lib/shared/mathSvg.js'
+import { ANGLES, OPPOSITE, sideOf, type Part, type Side, type Solved, type Vertex } from './solve.js'
+import { readMoved, type LineStyle, type Offset, type Settings } from './settings.js'
 
 export const FS = 20 // label font size
 const NAME_FS = 21
@@ -25,33 +25,41 @@ const TICK_GAP = 5
 const RIGHT = 1e-6 // how close to 90° counts as a right angle
 
 const RAD = Math.PI / 180
-const add = (p, q) => [p[0] + q[0], p[1] + q[1]]
-const sub = (p, q) => [p[0] - q[0], p[1] - q[1]]
-const mul = (p, k) => [p[0] * k, p[1] * k]
-const dot = (p, q) => p[0] * q[0] + p[1] * q[1]
-const len = (p) => Math.hypot(p[0], p[1])
-const unit = (p) => mul(p, 1 / (len(p) || 1))
-const perp = (p) => [-p[1], p[0]]
-const r1 = (v) => Math.round(v * 10) / 10
+/** A point or a direction, in the figure's own units (SVG's, y down). */
+export type Vec = [number, number]
+const add = (p: Vec, q: Vec): Vec => [p[0] + q[0], p[1] + q[1]]
+const sub = (p: Vec, q: Vec): Vec => [p[0] - q[0], p[1] - q[1]]
+const mul = (p: Vec, k: number): Vec => [p[0] * k, p[1] * k]
+const dot = (p: Vec, q: Vec) => p[0] * q[0] + p[1] * q[1]
+const len = (p: Vec) => Math.hypot(p[0], p[1])
+const unit = (p: Vec) => mul(p, 1 / (len(p) || 1))
+const perp = (p: Vec): Vec => [-p[1], p[0]]
+const r1 = (v: number) => Math.round(v * 10) / 10
 
 /** How far a label's box reaches from its middle in direction d. */
-const reach = (box, d) => (box.w / 2) * Math.abs(d[0]) + ((box.asc + box.desc) / 2) * Math.abs(d[1])
+const reach = (box: MathBox, d: Vec) => (box.w / 2) * Math.abs(d[0]) + ((box.asc + box.desc) / 2) * Math.abs(d[1])
+
+/** A label placed on the figure. `part` is what it labels: a side or angle ("AB", "B"), a vertex name ("vB"), a height ("hB") or where it lands ("fB"). */
+export type PlacedLabel = { part: string; box: MathBox; cx: number; cy: number; x: number; y: number; along: Vec; across: Vec; offset: Offset }
+
+/** A triangle laid out for Triangle.svelte to draw. */
+export type TriangleLayout = ReturnType<typeof buildTriangle>
 
 /**
  * @param s        clean settings
  * @param triangle a solved triangle: { angles, sides, sized }
  * @param given    the measures as typed numbers, null where solved
  */
-export function buildTriangle(s, triangle, given) {
+export function buildTriangle(s: Settings, triangle: Pick<Solved, 'angles' | 'sides' | 'sized'>, given: Record<Part, number | null>) {
   const { angles, sides, sized } = triangle
-  const name = (v) => s[`name${v}`].trim()
+  const name = (v: Vertex) => s[`name${v}`].trim()
 
   // Corners with the base side flat along the bottom and the third corner above
   // it, flipped and turned, then in SVG's y-down coordinates.
-  const [P, Q] = [s.base[0], s.base[1]]
-  const R = ANGLES.find((v) => v !== P && v !== Q)
+  const [P, Q] = [s.base[0] as Vertex, s.base[1] as Vertex]
+  const R = ANGLES.find((v) => v !== P && v !== Q)!
   const pr = sides[sideOf(P, R)]
-  let pts = { [P]: [0, 0], [Q]: [sides[s.base], 0], [R]: [pr * Math.cos(angles[P] * RAD), pr * Math.sin(angles[P] * RAD)] }
+  let pts = { [P]: [0, 0], [Q]: [sides[s.base], 0], [R]: [pr * Math.cos(angles[P] * RAD), pr * Math.sin(angles[P] * RAD)] } as Record<Vertex, Vec>
   const turn = s.rotate * RAD
   for (const v of ANGLES) {
     let [x, y] = pts[v]
@@ -65,11 +73,11 @@ export function buildTriangle(s, triangle, given) {
   for (const v of ANGLES) pts[v] = [(pts[v][0] - x0) * scale, (pts[v][1] - y0) * scale]
 
   const moved = readMoved(s.moved)
-  const labels = []
-  const overlaps = (box, [cx, cy]) =>
+  const labels: PlacedLabel[] = []
+  const overlaps = (box: MathBox, [cx, cy]: Vec) =>
     labels.some((l) => Math.abs(l.cx - cx) < (l.box.w + box.w) / 2 + 3 && Math.abs(l.cy - cy) < (l.box.asc + l.box.desc + box.asc + box.desc) / 2 + 2)
   // `slide`: how far the label may move along its part to clear the labels already placed.
-  const place = (part, box, center, along, across, slide = 0) => {
+  const place = (part: string, box: MathBox | null, center: Vec, along: Vec, across: Vec, slide = 0) => {
     if (!box) return
     for (let k = 1; slide && overlaps(box, center) && k * 8 <= slide; k++) {
       const tries = [add(center, mul(along, k * 8)), add(center, mul(along, -k * 8))].filter((c) => !overlaps(box, c))
@@ -80,10 +88,10 @@ export function buildTriangle(s, triangle, given) {
     labels.push({ part, box, cx, cy, x: cx - box.w / 2, y: cy + (box.asc - box.desc) / 2, along, across, offset: o })
   }
 
-  const rounded = (v) => String(Number(v.toFixed(s.round)))
+  const rounded = (v: number) => String(Number(v.toFixed(s.round)))
   const unitText = s.unit.trim() ? ` ${s.unit.trim()}` : ''
   /** What's written at a side or angle, as math, or null for nothing. */
-  function content(key, value, isAngle) {
+  function content(key: Part, value: number, isAngle: boolean) {
     let mode = s[`${key}Label`]
     if (mode === 'auto') mode = given[key] != null ? 'measure' : 'none'
     if (mode === 'text') return layoutMath(s[`${key}Text`], FS)
@@ -93,8 +101,8 @@ export function buildTriangle(s, triangle, given) {
   }
 
   // Angles: an arc (or congruence arcs) when labeled or marked, a square at a right angle.
-  const arcs = []
-  const squares = []
+  const arcs: string[] = []
+  const squares: [Vec, Vec, Vec][] = []
   for (const v of ANGLES) {
     const [a, b] = ANGLES.filter((x) => x !== v)
     const u1 = unit(sub(pts[a], pts[v]))
@@ -123,7 +131,7 @@ export function buildTriangle(s, triangle, given) {
       // part, so the height doesn't run through the label.
       let [e1, e2, spread] = [u1, u2, angles[v] * RAD]
       if (s[`h${v}`]) {
-        const [a2, b2] = OPPOSITE[v].split('')
+        const [a2, b2] = OPPOSITE[v].split('') as Vertex[]
         const dir = sub(pts[b2], pts[a2])
         const foot = add(pts[a2], mul(dir, dot(sub(pts[v], pts[a2]), dir) / dot(dir, dir)))
         const down = unit(sub(foot, pts[v]))
@@ -146,9 +154,9 @@ export function buildTriangle(s, triangle, given) {
   }
 
   // Sides: congruence ticks across the middle, the label just outside it.
-  const ticks = []
-  for (const side of ['AB', 'BC', 'CA']) {
-    const [p, q] = [pts[side[0]], pts[side[1]]]
+  const ticks: [Vec, Vec][] = []
+  for (const side of ['AB', 'BC', 'CA'] as Side[]) {
+    const [p, q] = [pts[side[0] as Vertex], pts[side[1] as Vertex]]
     const far = pts[OPPOSITE[side]]
     const mid = mul(add(p, q), 0.5)
     const t = unit(sub(q, p))
@@ -165,12 +173,12 @@ export function buildTriangle(s, triangle, given) {
 
   // Heights: from a corner straight to the line of the side across from it,
   // which runs on (dashed) when the height lands outside the triangle.
-  const heights = []
-  const extensions = []
+  const heights: { from: Vec; to: Vec; style: LineStyle }[] = []
+  const extensions: [Vec, Vec][] = []
   for (const v of ANGLES) {
-    const h = `h${v}`
+    const h = `h${v}` as const
     if (!s[h]) continue
-    const [a, b] = OPPOSITE[v].split('')
+    const [a, b] = OPPOSITE[v].split('') as Vertex[]
     const dir = sub(pts[b], pts[a])
     const t = dot(sub(pts[v], pts[a]), dir) / dot(dir, dir)
     const foot = add(pts[a], mul(dir, t))
@@ -189,7 +197,7 @@ export function buildTriangle(s, triangle, given) {
         squares.push([add(foot, mul(along, q)), add(foot, add(mul(along, q), mul(up, q))), add(foot, mul(up, q))])
       }
     }
-    let box = null
+    let box: MathBox | null = null
     if (s[`${h}Label`] === 'text') box = layoutMath(s[`${h}Text`], FS)
     else if (s[`${h}Label`] === 'measure' && sized) box = layoutMath(rounded(len(sub(pts[v], foot)) / scale), FS, { suffix: unitText })
     if (box) {
@@ -198,7 +206,7 @@ export function buildTriangle(s, triangle, given) {
       const [near] = [pts[a], pts[b]].map((e) => unit(sub(e, pts[v]))).sort((p, q) => dot(q, down) - dot(p, down))
       let across = perp(up)
       if (dot(across, near) > 0) across = mul(across, -1)
-      const spot = (d) => add(mul(add(pts[v], foot), 0.5), mul(d, 6 + reach(box, d)))
+      const spot = (d: Vec) => add(mul(add(pts[v], foot), 0.5), mul(d, 6 + reach(box, d)))
       // The other side of the height when this one is crowded (by its corner's angle label, say).
       // It has to fit between the height and the side next to it there.
       const other = spot(mul(across, -1))
@@ -215,7 +223,7 @@ export function buildTriangle(s, triangle, given) {
   }
 
   // The frame holds the triangle, its extensions and every label.
-  const points = [...ANGLES.map((v) => pts[v]), ...extensions.flat()]
+  const points: Vec[] = [...ANGLES.map((v) => pts[v]), ...extensions.flat()]
   for (const l of labels) points.push([l.cx - l.box.w / 2, l.y - l.box.asc], [l.cx + l.box.w / 2, l.y + l.box.desc])
   const minX = Math.min(...points.map((p) => p[0])) - PAD
   const minY = Math.min(...points.map((p) => p[1])) - PAD

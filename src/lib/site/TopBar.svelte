@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // On every page: the Math Figures name (back to the directory), the current
   // generator's name, and the teacher.dev credit linking out to teacher.dev.
   import { ChevronRight } from '@lucide/svelte'

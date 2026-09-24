@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { fromText, toText } from './math.js'
+import { fromText, toText, type MathKind } from './math.js'
 
 describe('text for the page address', () => {
-  test.each([
+  test.each<[string, MathKind, string]>([
     ['x < -1 or x >= 3', 'inequality', 'x<-1 or x>=3'],
     ['-2<x≤5', 'inequality', '-2<x<=5'],
     ['all real numbers', 'inequality', 'all real numbers'],
@@ -20,10 +20,10 @@ describe('text for the page address', () => {
   })
 })
 
-import { niceLabel, numberingOf } from './numbering.js'
+import { niceLabel, numberingOf, type Label, type Numbering } from './numbering.js'
 
 describe('niceLabel', () => {
-  test.each([
+  test.each<[number, Numbering, Label]>([
     [(3 * Math.PI) / 2, 'decimal', { sign: '', num: '3π', den: '2' }],
     [2.5, 'decimal', { text: '2.5' }],
     [1 / 3, 'decimal', { sign: '', num: '1', den: '3' }],

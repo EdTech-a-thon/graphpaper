@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { parseInequality, parseNumber } from './inequality.js'
+import { parseInequality, parseNumber, type Interval } from './inequality.js'
 
 // Intervals written the way a teacher would: [ and ] closed, ( and ) open.
-const show = ({ set, error }) =>
+const show = ({ set, error }: { set: Interval[] | null; error: string | null }) =>
   error ??
   (set === null
     ? 'blank'

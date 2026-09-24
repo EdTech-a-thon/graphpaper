@@ -1,36 +1,39 @@
-<script>
+<script lang="ts">
   // The triangle itself, as a self-contained SVG that prints crisply and
   // exports cleanly to PNG/SVG (fonts and colors are inline, no page CSS).
   // With `onmove`, its labels can be dragged: onmove(part, [along, across])
   // gets the label's new offset from its usual spot. The frame holds still
   // while a label is dragged, so the figure doesn't rescale under the pointer.
   import { SERIF } from '$lib/shared/mathSvg.js'
-  import { INK } from './settings.js'
+  import type { PlacedLabel, TriangleLayout, Vec } from './layout.js'
+  import { INK, type LineStyle, type Offset } from './settings.js'
 
-  let { figure, svg = $bindable(), label = 'Triangle', onmove = null } = $props()
+  let {
+    figure, svg = $bindable(), label = 'Triangle', onmove = null,
+  }: { figure: TriangleLayout; svg?: SVGSVGElement; label?: string; onmove?: ((part: string, offset: Offset) => void) | null } = $props()
 
-  let drag = null
-  let frozen = $state(null)
+  let drag: { id: number; x: number; y: number; l: PlacedLabel } | null = null
+  let frozen = $state<TriangleLayout['frame'] | null>(null)
   const f = $derived(frozen ?? figure.frame)
 
-  const DASH = { solid: undefined, dashed: '7 5', dotted: '0.01 5' }
-  const pts = (list) => list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  const DASH: Record<LineStyle, string | undefined> = { solid: undefined, dashed: '7 5', dotted: '0.01 5' }
+  const pts = (list: Vec[]) => list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
 
-  function down(event, l) {
+  function down(event: PointerEvent & { currentTarget: Element }, l: PlacedLabel) {
     if (!onmove || event.button !== 0) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, l }
     frozen = figure.frame
   }
-  function move(event) {
+  function move(event: PointerEvent) {
     if (!drag || event.pointerId !== drag.id) return
-    const k = svg.getScreenCTM()?.a || 1
+    const k = svg!.getScreenCTM()?.a || 1
     const d = [(event.clientX - drag.x) / k, (event.clientY - drag.y) / k]
     const { part, offset, along, across } = drag.l
-    onmove(part, [offset[0] + d[0] * along[0] + d[1] * along[1], offset[1] + d[0] * across[0] + d[1] * across[1]])
+    onmove!(part, [offset[0] + d[0] * along[0] + d[1] * along[1], offset[1] + d[0] * across[0] + d[1] * across[1]])
   }
-  function up(event) {
+  function up(event: PointerEvent) {
     if (!drag || event.pointerId !== drag.id) return
     drag = null
     frozen = null

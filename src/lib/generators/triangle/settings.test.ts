@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { DEFAULT_SETTINGS, cleanSettings, readMoved, readTriangle, settingsFromParams, settingsToQuery } from './settings.js'
 
-const params = (q) => settingsFromParams(new URLSearchParams(q))
+const params = (q: string) => settingsFromParams(new URLSearchParams(q))
 
 describe('the page address', () => {
   test('the opening triangle has a bare address', () => {
@@ -31,7 +31,7 @@ describe('moved labels', () => {
 describe('readTriangle', () => {
   test('the opening triangle', () => {
     const r = readTriangle(cleanSettings(DEFAULT_SETTINGS))
-    expect(r.triangle.angles.C).toBeCloseTo(66)
+    expect(r.triangle!.angles.C).toBeCloseTo(66)
   })
 
   test('a measure that isn’t a number', () => {
@@ -42,6 +42,6 @@ describe('readTriangle', () => {
 
   test('roots, fractions and π are numbers', () => {
     const r = readTriangle(cleanSettings({ ...DEFAULT_SETTINGS, A: '', AB: '5/2', BC: '5sqrt(3)/2' }))
-    expect(r.triangle.angles.A).toBeCloseTo(60)
+    expect(r.triangle!.angles.A).toBeCloseTo(60)
   })
 })

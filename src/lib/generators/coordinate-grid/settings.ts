@@ -4,20 +4,55 @@
 // Each axis's range is kept as the text the teacher typed ("-2", "2pi", "pi/4");
 // readAxes() works out what it means.
 
-import { CAPS } from '$lib/shared/caps.js'
+import { CAPS, type Cap } from '$lib/shared/caps.js'
 import { parseNumber } from '$lib/shared/math.js'
-import { fmt, niceText, numberingOf } from '$lib/shared/numbering.js'
-import { cleanRow, rowFromParam, rowToParam } from './equations.js'
+import { fmt, niceText, numberingOf, type Numbering } from '$lib/shared/numbering.js'
+import { cleanRow, rowFromParam, rowToParam, type Row } from './equations.js'
 
 export { CAPS, fmt }
 
 export const MAX_BLOCKS = 50
 export const EVERY = [1, 2, 5, 10, 0] // number every nth line; 0 = no numbers
-export const TITLE_MODES = ['text', 'blank', 'none'] // written title, write-on line for students, nothing
-export const LABEL_MODES = ['text', 'none'] // the letter at an axis arrow, like x or y
-const CAP_KEYS = ['xStartCap', 'xEndCap', 'yStartCap', 'yEndCap']
+export const TITLE_MODES = ['text', 'blank', 'none'] as const // written title, write-on line for students, nothing
+export const LABEL_MODES = ['text', 'none'] as const // the letter at an axis arrow, like x or y
+const CAP_KEYS = ['xStartCap', 'xEndCap', 'yStartCap', 'yEndCap'] as const
 
-export const DEFAULT_SETTINGS = {
+export type TitleMode = (typeof TITLE_MODES)[number]
+export type LabelMode = (typeof LABEL_MODES)[number]
+export type AxisName = 'x' | 'y'
+
+export type Settings = {
+  xFrom: string
+  xTo: string
+  xStep: string
+  yFrom: string
+  yTo: string
+  yStep: string
+  xEvery: number
+  yEvery: number
+  title: string
+  titleMode: TitleMode
+  xTitle: string
+  xTitleMode: TitleMode
+  yTitle: string
+  yTitleMode: TitleMode
+  xLabel: string
+  xLabelMode: LabelMode
+  yLabel: string
+  yLabelMode: LabelMode
+  xStartCap: Cap
+  xEndCap: Cap
+  yStartCap: Cap
+  yEndCap: Cap
+  equations: Row[]
+}
+/** Settings as they may arrive: from a form, a link, or a preset stored by an older version. */
+export type RawSettings = Record<string, any>
+
+/** One axis's range as numbers, and how its numbers are written. */
+export type Axis = { start: number; step: number; blocks: number; numbering: Numbering }
+
+export const DEFAULT_SETTINGS: Settings = {
   xFrom: '0',
   xTo: '15',
   xStep: '1',
@@ -44,21 +79,21 @@ export const DEFAULT_SETTINGS = {
 }
 
 /** Settings that describe the graph itself, which is what a preset saves. */
-export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS)
+export const GRAPH_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]
 
-const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
-const text = (v, fallback) => (v === undefined || v === null ? fallback : String(v))
-const titleMode = (v, fallback) => (TITLE_MODES.includes(v) ? v : fallback)
-const labelMode = (v, fallback) => (LABEL_MODES.includes(v) ? v : fallback)
+const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
+const text = (v: unknown, fallback: string) => (v === undefined || v === null ? fallback : String(v))
+const titleMode = (v: any, fallback: TitleMode): TitleMode => (TITLE_MODES.includes(v) ? v : fallback)
+const labelMode = (v: any, fallback: LabelMode): LabelMode => (LABEL_MODES.includes(v) ? v : fallback)
 
-const cap = (v, fallback) => (v in CAPS ? v : fallback)
+const cap = (v: any, fallback: Cap): Cap => (v in CAPS ? v : fallback)
 
 /** Older links and presets: an axis label could be a blank line (now an axis
  *  title), arrows were one on/off switch for every end, and a range was a start
  *  and a number of blocks rather than From and To. */
-function upgrade(s) {
+function upgrade(s: RawSettings): RawSettings {
   const out = { ...s }
-  for (const axis of ['x', 'y']) {
+  for (const axis of ['x', 'y'] as const) {
     if (s[`${axis}LabelMode`] === 'blank') Object.assign(out, { [`${axis}LabelMode`]: 'none', [`${axis}TitleMode`]: 'blank' })
     const [blocks, start] = [s[`${axis}Blocks`], s[`${axis}Start`]]
     if (s[`${axis}From`] === undefined && (blocks !== undefined || start !== undefined)) {
@@ -79,10 +114,10 @@ function upgrade(s) {
 }
 
 /** A number as range text, the way the address writes it: "-2", "0.5". */
-const plain = (v) => String(Number(v.toFixed(10)))
+const plain = (v: number) => String(Number(v.toFixed(10)))
 
 /** Tidy raw values (from a form, a link or a stored preset) into usable settings. */
-export function cleanSettings(s) {
+export function cleanSettings(s: RawSettings): Settings {
   s = upgrade(s)
   const d = DEFAULT_SETTINGS
   return {
@@ -112,17 +147,17 @@ export function cleanSettings(s) {
 }
 
 /** Do two settings draw the same graph? */
-export function sameGraph(a, b) {
+export function sameGraph(a: RawSettings, b: RawSettings): boolean {
   const ca = cleanSettings(a)
   const cb = cleanSettings(b)
-  const rows = (c) => c.equations.filter((r) => r.text.trim()).map(rowToParam).join('\n')
+  const rows = (c: Settings) => c.equations.filter((r) => r.text.trim()).map(rowToParam).join('\n')
   return GRAPH_KEYS.every((k) => (k === 'equations' ? rows(ca) === rows(cb) : ca[k] === cb[k]))
 }
 
-export function settingsToQuery(s) {
+export function settingsToQuery(s: Settings): string {
   const params = new URLSearchParams()
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {
-    const v = s[key]
+    const v = s[key as keyof Settings]
     if (key === 'equations' || v === def || v === null || v === undefined) continue
     params.set(key, typeof v === 'boolean' ? (v ? '1' : '0') : String(v))
   }
@@ -131,11 +166,11 @@ export function settingsToQuery(s) {
   return params.toString()
 }
 
-export function settingsFromParams(params) {
-  const s = structuredClone(DEFAULT_SETTINGS)
+export function settingsFromParams(params: URLSearchParams): Settings {
+  const s: RawSettings = structuredClone(DEFAULT_SETTINGS)
   if (params.get('arrows') === '0' && !CAP_KEYS.some((k) => params.has(k))) for (const k of CAP_KEYS) s[k] = 'none'
   // A link from before From/To: let upgrade() turn its start and blocks into a range.
-  for (const axis of ['x', 'y']) {
+  for (const axis of ['x', 'y'] as const) {
     if (params.has(`${axis}From`) || !(params.has(`${axis}Blocks`) || params.has(`${axis}Start`))) continue
     delete s[`${axis}From`]
     delete s[`${axis}To`]
@@ -156,19 +191,18 @@ export function settingsFromParams(params) {
  * Each axis's range as numbers, how to write them, and anything the teacher should fix, as
  * messages for the settings panel. An axis whose range can't be used falls
  * back to 0 to 15 by 1, so there is always a figure.
- * @returns {{ x: { start: number, step: number, blocks: number, numbering: string }, y: { start: number, step: number, blocks: number, numbering: string }, problems: Record<string, string | null> }}
  */
-export function readAxes(s) {
-  const problems = {}
-  const out = {}
-  for (const axis of ['x', 'y']) {
-    const key = (k) => `${axis}${k}`
+export function readAxes(s: Settings): { x: Axis; y: Axis; problems: Record<string, string | null> } {
+  const problems: Record<string, string | null> = {}
+  const out = {} as { x: Axis; y: Axis }
+  for (const axis of ['x', 'y'] as const) {
+    const key = <K extends 'From' | 'To' | 'Step'>(k: K) => `${axis}${k}` as const
     const from = parseNumber(s[key('From')])
     const to = parseNumber(s[key('To')])
     const step = parseNumber(s[key('Step')])
     const numbering = numberingOf(s[key('From')], s[key('To')], s[key('Step')])
-    const n = (v) => niceText(v, numbering)
-    const p = { From: null, To: null, Step: null }
+    const n = (v: number) => niceText(v, numbering)
+    const p: Record<'From' | 'To' | 'Step', string | null> = { From: null, To: null, Step: null }
     if (from === null) p.From = 'Type a number, like −10, 2.5, 1/2 or −2π.'
     if (to === null) p.To = 'Type a number, like 10, 2.5, 1/2 or 2π.'
     if (step === null) p.Step = 'Type a number, like 1, 0.5, 1/4 or π/6.'
@@ -176,14 +210,14 @@ export function readAxes(s) {
     if (from !== null && to !== null && from >= to) p.To = `The axis has to end after it starts, so make this bigger than ${n(from)}.`
     let blocks = 15
     if (!p.From && !p.To && !p.Step) {
-      const exact = (to - from) / step
+      const exact = (to! - from!) / step!
       blocks = Math.ceil(exact - 1e-9)
       if (blocks > MAX_BLOCKS) p.Step = `That makes ${blocks} blocks. Count by a bigger number (${MAX_BLOCKS} blocks at most).`
-      else if (Math.abs(exact - Math.round(exact)) > 1e-9) p.To = `Counting by ${n(step)} from ${n(from)} doesn't land on ${n(to)}, so the grid runs on to ${n(from + blocks * step)}.`
+      else if (Math.abs(exact - Math.round(exact)) > 1e-9) p.To = `Counting by ${n(step!)} from ${n(from!)} doesn't land on ${n(to!)}, so the grid runs on to ${n(from! + blocks * step!)}.`
     }
     const ok = !p.From && !(p.To && !p.To.startsWith('Counting')) && !p.Step
-    out[axis] = ok ? { start: from, step, blocks, numbering } : { start: 0, step: 1, blocks: 15, numbering: 'decimal' }
-    for (const [k, v] of Object.entries(p)) problems[key(k)] = v
+    out[axis] = ok ? { start: from!, step: step!, blocks, numbering } : { start: 0, step: 1, blocks: 15, numbering: 'decimal' }
+    for (const [k, v] of Object.entries(p)) problems[`${axis}${k}`] = v
   }
   return { ...out, problems }
 }

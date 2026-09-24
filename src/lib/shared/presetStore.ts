@@ -1,8 +1,16 @@
 // Saved presets for one generator, kept in this browser's localStorage only.
 // `tidy` turns any stored or live settings into the part a preset keeps.
 
-export function createPresetStore(storageKey, tidy) {
-  function write(list) {
+export type Preset<S> = { name: string; settings: S }
+
+export type PresetStore<S> = {
+  load(): Preset<S>[]
+  save(list: Preset<S>[], name: string, settings: S): Preset<S>[]
+  remove(list: Preset<S>[], name: string): Preset<S>[]
+}
+
+export function createPresetStore<S>(storageKey: string, tidy: (settings: any) => S): PresetStore<S> {
+  function write(list: Preset<S>[]) {
     try {
       localStorage.setItem(storageKey, JSON.stringify(list))
     } catch {
@@ -18,7 +26,7 @@ export function createPresetStore(storageKey, tidy) {
         if (!Array.isArray(list)) return []
         return list
           .filter((p) => p && typeof p.name === 'string' && p.settings && typeof p.settings === 'object')
-          .map((p) => ({ name: p.name, settings: tidy(p.settings) }))
+          .map((p): Preset<S> => ({ name: p.name, settings: tidy(p.settings) }))
       } catch {
         return []
       }

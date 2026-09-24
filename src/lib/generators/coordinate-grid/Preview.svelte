@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // The Coordinate Grid Generator's picture on the directory: a real grid,
   // drawn by the same code the generator uses.
   import Graph from './Graph.svelte'

@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
   // A settings group that starts collapsed and shows a one-line summary of its
   // current values, so the whole setup can be read at a glance.
-  import { ChevronDown } from '@lucide/svelte'
+  import { ChevronDown, type LucideIcon } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
 
-  let { title, summary, icon: Icon, children } = $props()
+  let { title, summary, icon: Icon, children }: { title: string; summary: string; icon: LucideIcon; children: Snippet } = $props()
 </script>
 
 <details class="section">

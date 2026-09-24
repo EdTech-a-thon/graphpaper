@@ -1,9 +1,9 @@
 // Lays out a coordinate grid as plain numbers for Graph.svelte to draw. Every
 // block is a square of CELL units; the SVG scales to fit wherever it's shown.
 
-import { numberText } from '$lib/shared/numbering.js'
-import { COLORS, readEquations } from './equations.js'
-import { readAxes } from './settings.js'
+import { numberText, type Numbering } from '$lib/shared/numbering.js'
+import { COLORS, readEquations, type Point } from './equations.js'
+import { readAxes, type Settings } from './settings.js'
 
 export const CELL = 32
 const FS = 14 // tick-number font size
@@ -13,15 +13,15 @@ const CHAR = FS * 0.6 // rough width of one digit
 const HEAD = 12 // length of an arrowhead where a graphed line leaves the grid
 const HEAD_HALF = 5.5 // half its width
 
-const round = (v) => Math.round(v * 100) / 100
-const pathLength = (pts) => pts.reduce((sum, p, k) => (k ? sum + Math.hypot(p.x - pts[k - 1].x, p.y - pts[k - 1].y) : 0), 0)
+const round = (v: number) => Math.round(v * 100) / 100
+const pathLength = (pts: Point[]) => pts.reduce((sum, p, k) => (k ? sum + Math.hypot(p.x - pts[k - 1].x, p.y - pts[k - 1].y) : 0), 0)
 
 /**
  * An arrowhead at the last point of a path, pointing along it, and the path
  * cut back to the arrowhead's base so the line doesn't poke through its tip.
  */
-function arrowAt(pts, heads) {
-  const tip = pts.at(-1)
+function arrowAt(pts: Point[], heads: string[]): { pts: Point[] } {
+  const tip = pts.at(-1)!
   // Walk back one arrowhead's length along the path to find the base.
   let k = pts.length - 1
   let left = HEAD
@@ -48,12 +48,12 @@ function arrowAt(pts, heads) {
   return { pts: [...pts.slice(0, k), inset] }
 }
 
-function ticks(blocks, step, start, every, numbering) {
+function ticks(blocks: number, step: number, start: number, every: number, numbering: Numbering) {
   // Count from the line at 0 when there is one, so "every 5" gives 0, 5, 10…
   const zero = -start / step
   const z = Math.round(zero)
   const ref = Math.abs(zero - z) < 1e-9 && z >= 0 && z <= blocks ? z : 0
-  const out = []
+  const out: { i: number; text: string }[] = []
   if (!every) return out
   for (let i = 0; i <= blocks; i++) {
     if ((i - ref) % every === 0) out.push({ i, text: numberText(start + i * step, numbering) })
@@ -61,7 +61,13 @@ function ticks(blocks, step, start, every, numbering) {
   return out
 }
 
-export function buildGraph(settings) {
+/** A coordinate grid laid out for Graph.svelte to draw. */
+export type GraphLayout = ReturnType<typeof buildGraph>
+
+type Text = { x: number; y: number; text: string; anchor?: 'start' | 'middle' | 'end' }
+type Segment = { x1: number; y1: number; x2: number; y2: number }
+
+export function buildGraph(settings: Settings) {
   const { x, y } = readAxes(settings)
   const s = { ...settings, xStart: x.start, xStep: x.step, xBlocks: x.blocks, yStart: y.start, yStep: y.step, yBlocks: y.blocks }
   const x0 = s.xStart
@@ -125,11 +131,11 @@ export function buildGraph(settings) {
 
   // Tick numbers: x below the x-axis, y to the left of the y-axis. Where the
   // axes cross, a shared value is written once (like the "0" in the corner).
-  const onYAxis = (i) => Math.abs(L + i * CELL - axisX) < 0.5
-  const onXAxis = (j) => Math.abs(T + gridH - j * CELL - axisY) < 0.5
+  const onYAxis = (i: number) => Math.abs(L + i * CELL - axisX) < 0.5
+  const onXAxis = (j: number) => Math.abs(T + gridH - j * CELL - axisY) < 0.5
   const xCross = xTicks.find((t) => onYAxis(t.i))
   const yCross = yTicks.find((t) => onXAxis(t.i))
-  const numbers = []
+  const numbers: (Text & { anchor: 'middle' | 'end' })[] = []
   for (const t of xTicks) {
     const x = L + t.i * CELL
     const cross = t === xCross
@@ -142,8 +148,8 @@ export function buildGraph(settings) {
   }
 
   // Titles, axis labels, and write-on lines for any left blank.
-  const labels = []
-  const blanks = []
+  const labels: (Text & { kind: 'title' | 'tip' | 'side'; rotate?: boolean })[] = []
+  const blanks: Segment[] = []
   const midX = L + gridW / 2
   const midY = T + gridH / 2
   const titleY = PAD + FS * 1.6
@@ -162,17 +168,17 @@ export function buildGraph(settings) {
 
   // What the teacher graphed: each line or curve runs to the grid's edge, with
   // an arrowhead where it leaves at the ends the teacher picked; points are dots or crosses.
-  const px = ({ x, y }) => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
+  const px = ({ x, y }: Point): Point => ({ x: L + ((x - x0) / s.xStep) * CELL, y: T + gridH - ((y - y0) / s.yStep) * CELL })
   const box = { x0, x1, y0, y1 }
-  const lines = []
-  const dots = []
+  const lines: { d: string; heads: string[]; color: string; dash: string | undefined; cap: 'round' | 'butt'; width: number }[] = []
+  const dots: (Point & { color: string; cross: boolean })[] = []
   const rows = settings.equations ?? []
   readEquations(rows.map((r) => r.text), box).forEach((read, i) => {
     const { color, line: style, arrows, point } = rows[i]
     const ink = COLORS[color]
     for (const run of read?.runs ?? []) {
       let pts = run.points.map(px)
-      const heads = []
+      const heads: string[] = []
       // Arrows go on ends that leave the grid, if the teacher wants that end.
       const want = [arrows === 'both' || arrows === 'left', arrows === 'both' || arrows === 'right']
       if (pathLength(pts) > HEAD * 2.5) {

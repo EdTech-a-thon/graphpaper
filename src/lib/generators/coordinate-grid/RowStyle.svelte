@@ -1,18 +1,18 @@
-<script>
+<script lang="ts">
   // The button before an equation, drawn the way that equation is graphed (its
   // color, line style and arrows, or dots or crosses for points), so each row reads as
   // its own line on the grid. It opens a small popup to change those. Fixed-position like
   // CapPicker's menu, so the scrolling settings column can't clip it.
   import { tick } from 'svelte'
-  import { ARROWS, COLORS, LINE_STYLES, POINT_STYLES } from './equations.js'
+  import { ARROWS, COLORS, LINE_STYLES, POINT_STYLES, type Arrows, type Color, type LineStyle, type PointStyle, type Row } from './equations.js'
 
   // row: { color, line, arrows, point }, edited in place. isPoints: only color and point apply.
-  let { row, label, id, isPoints = false } = $props()
+  let { row, label, id, isPoints = false }: { row: Row; label: string; id: string; isPoints?: boolean } = $props()
 
   let open = $state(false)
-  let root = $state()
-  let trigger = $state()
-  let panel = $state()
+  let root = $state<HTMLElement>()
+  let trigger = $state<HTMLButtonElement>()
+  let panel = $state<HTMLElement>()
   let pos = $state({ left: 0, top: 0 })
 
   const GAP = 6
@@ -21,24 +21,24 @@
   async function show() {
     open = true
     await tick()
-    const r = trigger.getBoundingClientRect()
-    const h = panel.offsetHeight
-    const w = panel.offsetWidth
+    const r = trigger!.getBoundingClientRect()
+    const h = panel!.offsetHeight
+    const w = panel!.offsetWidth
     const below = r.bottom + GAP + h <= window.innerHeight - EDGE
     pos = {
       top: Math.max(EDGE, below ? r.bottom + GAP : r.top - GAP - h),
       left: Math.max(EDGE, Math.min(r.left, window.innerWidth - EDGE - w)),
     }
-    panel.querySelector('[aria-checked=true]')?.focus()
+    panel!.querySelector<HTMLElement>('[aria-checked=true]')?.focus()
   }
   function hide(refocus = true) {
     open = false
     if (refocus) trigger?.focus()
   }
-  function onpointerdown(event) {
-    if (open && !root.contains(event.target)) hide(false)
+  function onpointerdown(event: PointerEvent) {
+    if (open && !root!.contains(event.target as Node)) hide(false)
   }
-  function onkeydown(event) {
+  function onkeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       event.preventDefault()
       hide()
@@ -46,7 +46,7 @@
   }
 </script>
 
-<svelte:window {onpointerdown} onresize={() => open && hide(false)} onscrollcapture={(e) => open && !panel?.contains(e.target) && hide(false)} />
+<svelte:window {onpointerdown} onresize={() => open && hide(false)} onscrollcapture={(e) => open && !panel?.contains(e.target as Node) && hide(false)} />
 
 <!-- How this row looks on the grid, in miniature. -->
 {#snippet preview()}
@@ -75,7 +75,7 @@
   </svg>
 {/snippet}
 
-{#snippet lineIcon(style)}
+{#snippet lineIcon(style: LineStyle)}
   <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true">
     <line
       x1="3" y1="6" x2="25" y2="6" stroke="currentColor" stroke-width="2.5"
@@ -85,7 +85,7 @@
   </svg>
 {/snippet}
 
-{#snippet pointIcon(style)}
+{#snippet pointIcon(style: PointStyle)}
   <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true">
     {#if style === 'cross'}
       <path d="M10,2 L18,10 M10,10 L18,2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
@@ -95,7 +95,7 @@
   </svg>
 {/snippet}
 
-{#snippet arrowIcon(ends)}
+{#snippet arrowIcon(ends: Arrows)}
   <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true" fill="currentColor" stroke="currentColor" stroke-width="2">
     <line x1={ends === 'both' || ends === 'left' ? 8 : 3} y1="6" x2={ends === 'both' || ends === 'right' ? 20 : 25} y2="6" />
     {#if ends === 'both' || ends === 'left'}<path d="M2,6 L9,2 L9,10 z" stroke="none" />{/if}
@@ -130,7 +130,7 @@
       <div class="group">
         <span class="name" id="{id}-color">Color</span>
         <div class="swatches" role="radiogroup" aria-labelledby="{id}-color">
-          {#each Object.entries(COLORS) as [name, hex]}
+          {#each (Object.entries(COLORS) as [Color, string][]) as [name, hex]}
             <button
               type="button"
               class="swatch"
@@ -149,7 +149,7 @@
         <div class="group">
           <span class="name" id="{id}-point">Point</span>
           <div class="segmented" role="radiogroup" aria-labelledby="{id}-point">
-            {#each Object.entries(POINT_STYLES) as [v, name]}
+            {#each (Object.entries(POINT_STYLES) as [PointStyle, string][]) as [v, name]}
               <button type="button" role="radio" aria-checked={row.point === v} aria-label={name} title={name} class:on={row.point === v} onclick={() => (row.point = v)}>
                 {@render pointIcon(v)}
               </button>
@@ -160,7 +160,7 @@
         <div class="group">
           <span class="name" id="{id}-line">Line</span>
           <div class="segmented" role="radiogroup" aria-labelledby="{id}-line">
-            {#each Object.entries(LINE_STYLES) as [v, name]}
+            {#each (Object.entries(LINE_STYLES) as [LineStyle, string][]) as [v, name]}
               <button type="button" role="radio" aria-checked={row.line === v} aria-label={name} title={name} class:on={row.line === v} onclick={() => (row.line = v)}>
                 {@render lineIcon(v)}
               </button>
@@ -171,7 +171,7 @@
         <div class="group">
           <span class="name" id="{id}-arrows">Arrows</span>
           <div class="segmented" role="radiogroup" aria-labelledby="{id}-arrows">
-            {#each Object.entries(ARROWS) as [v, name]}
+            {#each (Object.entries(ARROWS) as [Arrows, string][]) as [v, name]}
               <button type="button" role="radio" aria-checked={row.arrows === v} aria-label={name} title={name} class:on={row.arrows === v} onclick={() => (row.arrows = v)}>
                 {@render arrowIcon(v)}
               </button>

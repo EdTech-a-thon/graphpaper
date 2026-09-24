@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // The Coordinate Grid Generator: presets, what's graphed and collapsed settings on the left,
   // the figure card on the right. On a wide screen the page itself never
   // scrolls; only the settings column does. Settings are mirrored into the
@@ -8,6 +8,7 @@
   import { afterNavigate, replaceState } from '$app/navigation'
   import { page } from '$app/state'
   import CapPicker from '$lib/shared/CapPicker.svelte'
+  import type { Cap } from '$lib/shared/caps.js'
   import FigureCanvas from '$lib/shared/FigureCanvas.svelte'
   import HelpTip from '$lib/shared/HelpTip.svelte'
   import LabelField from '$lib/shared/LabelField.svelte'
@@ -16,15 +17,17 @@
   import Presets from '$lib/shared/Presets.svelte'
   import Section from '$lib/shared/Section.svelte'
   import { createHistory } from '$lib/shared/history.svelte.js'
-  import { ROW_DEFAULTS, readEquations } from './equations.js'
+  import { ROW_DEFAULTS, readEquations, type Row } from './equations.js'
   import RowStyle from './RowStyle.svelte'
   import Graph from './Graph.svelte'
   import { presetStore } from './presets.js'
-  import { CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery } from './settings.js'
+  import {
+    CAPS, cleanSettings, readAxes, sameGraph, settingsFromParams, settingsToQuery, type AxisName, type Settings,
+  } from './settings.js'
 
   // There's always a row to type the next equation in.
-  const blankRow = () => ({ ...ROW_DEFAULTS })
-  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [blankRow()] })
+  const blankRow = (): Row => ({ ...ROW_DEFAULTS })
+  const withRow = (s: Settings): Settings => (s.equations.length ? s : { ...s, equations: [blankRow()] })
 
   let settings = $state(withRow(settingsFromParams(page.url.searchParams)))
   const clean = $derived(cleanSettings(settings))
@@ -43,7 +46,7 @@
     const i = settings.equations.length - 1
     requestAnimationFrame(() => document.getElementById(`eq-${i}`)?.focus())
   }
-  function removeRow(i) {
+  function removeRow(i: number) {
     settings.equations.splice(i, 1)
     if (!settings.equations.length) settings.equations.push(blankRow())
   }
@@ -65,7 +68,7 @@
     storageKey: 'mathfigures.coordinate-grid.history',
   })
 
-  const EVERY_OPTIONS = [
+  const EVERY_OPTIONS: [number, string][] = [
     [1, 'Every line'],
     [2, 'Every 2nd line'],
     [5, 'Every 5th line'],
@@ -76,48 +79,48 @@
   const AXES = [
     { axis: 'x', heading: 'x-axis', icon: MoveRight, ends: [['Start', 'Left end', 'left'], ['End', 'Right end', 'right']] },
     { axis: 'y', heading: 'y-axis', icon: MoveUp, ends: [['Start', 'Bottom end', 'down'], ['End', 'Top end', 'up']] },
-  ]
+  ] as const
 
   // Named the way Excel and Sheets name them: a chart title and axis titles.
   const TITLES = [
     { key: 'title', name: 'Chart title', placeholder: 'Distance over time' },
     { key: 'xTitle', name: 'x-axis title', placeholder: 'Time (hours)' },
     { key: 'yTitle', name: 'y-axis title', placeholder: 'Distance (km)' },
-  ]
+  ] as const
   const RANGE_FIELDS = [
     ['From', 'From'],
     ['To', 'To'],
     ['Step', 'Count by'],
-  ]
-  function axisSummary(axis) {
+  ] as const
+  function axisSummary(axis: AxisName) {
     const { start, step, blocks, numbering } = axes[axis]
-    const every = clean[`${axis}Every`]
-    const n = (v) => niceText(v, numbering)
+    const every = clean[`${axis}Every` as const]
+    const n = (v: number) => niceText(v, numbering)
     return [
       `${n(start)} to ${n(start + blocks * step)}`,
       `by ${n(step)}`,
       every ? (every === 1 ? 'numbered' : `numbered every ${every}`) : 'unnumbered',
-      clean[`${axis}LabelMode`] === 'text' && clean[`${axis}Label`].trim() ? `“${clean[`${axis}Label`].trim()}”` : 'no label',
-      endsSummary(clean[`${axis}StartCap`], clean[`${axis}EndCap`]),
+      clean[`${axis}LabelMode` as const] === 'text' && clean[`${axis}Label` as const].trim() ? `“${clean[`${axis}Label` as const].trim()}”` : 'no label',
+      endsSummary(clean[`${axis}StartCap` as const], clean[`${axis}EndCap` as const]),
     ].join(' · ')
   }
-  function endsSummary(start, end) {
+  function endsSummary(start: Cap, end: Cap) {
     if (start === end) return start === 'none' ? 'plain ends' : `${CAPS[start].toLowerCase()}s`
     return `${CAPS[start].toLowerCase()} / ${CAPS[end].toLowerCase()}`
   }
   const titlesSummary = $derived.by(() => {
-    const shown = (key) => (clean[`${key}Mode`] === 'text' ? clean[key].trim() : '')
+    const shown = (key: (typeof TITLES)[number]['key']) => (clean[`${key}Mode` as const] === 'text' ? clean[key].trim() : '')
     const parts = TITLES.map(({ key, name }) =>
-      clean[`${key}Mode`] === 'blank' ? `${name}: blank line` : shown(key) ? `“${shown(key)}”` : '',
+      clean[`${key}Mode` as const] === 'blank' ? `${name}: blank line` : shown(key) ? `“${shown(key)}”` : '',
     )
     return parts.filter(Boolean).join(' · ') || 'None'
   })
 
-  function applyPreset(preset) {
+  function applyPreset(preset: Settings) {
     settings = withRow(cleanSettings($state.snapshot(preset)))
   }
 
-  let svg = $state()
+  let svg = $state<SVGSVGElement>()
   const filename = $derived(
     (clean.titleMode === 'text' && clean.title.trim() ? clean.title.trim() : 'coordinate-grid')
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'coordinate-grid',
@@ -165,7 +168,7 @@
           {#each TITLES as { key, name, placeholder }}
             <div class="field">
               <span>{name}</span>
-              <LabelField {name} {placeholder} bind:mode={settings[`${key}Mode`]} bind:text={settings[key]} />
+              <LabelField {name} {placeholder} bind:mode={settings[`${key}Mode` as const]} bind:text={settings[key]} />
             </div>
           {/each}
         </Section>
@@ -176,7 +179,7 @@
               {#each RANGE_FIELDS as [key, name]}
                 <div class="range-field">
                   <label for="{axis}-{key}">{name}</label>
-                  <MathInput id="{axis}-{key}" aria-invalid={!!axes.problems[`${axis}${key}`]} bind:value={settings[`${axis}${key}`]} />
+                  <MathInput id="{axis}-{key}" aria-invalid={!!axes.problems[`${axis}${key}`]} bind:value={settings[`${axis}${key}` as const]} />
                 </div>
               {/each}
             </div>
@@ -185,7 +188,7 @@
             {/each}
             <label class="field">
               Numbers
-              <select bind:value={settings[`${axis}Every`]}>
+              <select bind:value={settings[`${axis}Every` as const]}>
                 {#each EVERY_OPTIONS as [v, label]}<option value={v}>{label}</option>{/each}
               </select>
             </label>
@@ -195,15 +198,15 @@
                 name="{heading} label"
                 placeholder={axis}
                 blank={false}
-                bind:mode={settings[`${axis}LabelMode`]}
-                bind:text={settings[`${axis}Label`]}
+                bind:mode={settings[`${axis}LabelMode` as const]}
+                bind:text={settings[`${axis}Label` as const]}
               />
             </div>
             <div class="ends">
               {#each ends as [key, name, direction]}
                 <div class="field">
                   <span>{name}</span>
-                  <CapPicker options={CAPS} label="{heading} {name.toLowerCase()}" {direction} bind:value={settings[`${axis}${key}Cap`]} />
+                  <CapPicker options={CAPS} label="{heading} {name.toLowerCase()}" {direction} bind:value={settings[`${axis}${key}Cap` as const]} />
                 </div>
               {/each}
             </div>

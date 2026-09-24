@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // The Triangle Generator: presets, the triangle's measures and collapsed
   // settings on the left, the figure card on the right. Settings are mirrored
   // into the page address so a bookmark or shared link brings back exactly this
@@ -19,8 +19,9 @@
   import {
     ANGLES, DEFAULT_SETTINGS, LINE_STYLES, SIDES,
     cleanSettings, readMoved, readTriangle, sameFigure, settingsFromParams, settingsToQuery, writeMoved,
+    type LineStyle, type Offset, type Settings, type TriangleRead,
   } from './settings.js'
-  import { OPPOSITE } from './solve.js'
+  import { OPPOSITE, type Part, type Side, type Solved, type Vertex } from './solve.js'
   import Triangle from './Triangle.svelte'
 
   let settings = $state(settingsFromParams(page.url.searchParams))
@@ -29,12 +30,13 @@
   const read = $derived(readTriangle(clean))
 
   // The last measures that made a triangle, drawn with the current settings.
-  const MEASURES = [...ANGLES, ...SIDES]
-  const measuresOf = (s) => Object.fromEntries(MEASURES.map((k) => [k, s[k]]))
+  const MEASURES: Part[] = [...ANGLES, ...SIDES]
+  const measuresOf = (s: Settings) => Object.fromEntries(MEASURES.map((k) => [k, s[k]])) as Record<Part, string>
+  type Good = TriangleRead & { triangle: Solved; measures: Record<Part, string> }
   const opening = cleanSettings(DEFAULT_SETTINGS)
-  let lastGood = { ...readTriangle(opening), measures: measuresOf(opening) }
+  let lastGood = { ...readTriangle(opening), measures: measuresOf(opening) } as Good // the opening triangle always solves
   const good = $derived.by(() => {
-    if (read.triangle) lastGood = { ...read, measures: measuresOf(clean) }
+    if (read.triangle) lastGood = { ...read, measures: measuresOf(clean) } as Good
     return lastGood
   })
   const figure = $derived(buildTriangle({ ...clean, ...good.measures }, good.triangle, good.given))
@@ -56,38 +58,38 @@
     storageKey: 'mathfigures.triangle.history',
   })
 
-  const name = (v) => clean[`name${v}`].trim() || v
-  const sideName = (s) => `${name(s[0])}${name(s[1])}`
-  const partName = (k) => (ANGLES.includes(k) ? `∠${name(k)}` : sideName(k))
+  const name = (v: Vertex) => clean[`name${v}` as const].trim() || v
+  const sideName = (s: Side) => `${name(s[0] as Vertex)}${name(s[1] as Vertex)}`
+  const partName = (k: Part) => (ANGLES.includes(k as Vertex) ? `∠${name(k as Vertex)}` : sideName(k as Side))
 
   // How each measure reads: as typed when given, else solved and rounded.
   const unitText = $derived(clean.unit.trim() ? ` ${clean.unit.trim()}` : '')
-  const rounded = (v) => String(Number(v.toFixed(clean.round)))
-  const pretty = (t) => String(t).replace(/sqrt\(([^()]*)\)/g, '√$1').replace(/sqrt/g, '√').replace(/pi/g, 'π').replace(/-/g, '−')
-  function solvedText(k) {
+  const rounded = (v: number) => String(Number(v.toFixed(clean.round)))
+  const pretty = (t: string) => String(t).replace(/sqrt\(([^()]*)\)/g, '√$1').replace(/sqrt/g, '√').replace(/pi/g, 'π').replace(/-/g, '−')
+  function solvedText(k: Part) {
     const t = read.triangle
     if (!t) return ''
-    return rounded(ANGLES.includes(k) ? t.angles[k] : t.sides[k])
+    return rounded(ANGLES.includes(k as Vertex) ? t.angles[k as Vertex] : t.sides[k as Side])
   }
-  function measureText(k) {
+  function measureText(k: Part) {
     const typed = clean[k].trim()
-    if (ANGLES.includes(k)) return `${typed ? pretty(typed) : solvedText(k) || '?'}°`
+    if (ANGLES.includes(k as Vertex)) return `${typed ? pretty(typed) : solvedText(k) || '?'}°`
     if (read.triangle && !read.triangle.sized) return null
     return `${typed ? pretty(typed) : solvedText(k) || '?'}${unitText}`
   }
-  const measureNote = (k) => (clean[k].trim() ? 'Its measure, as you typed it.' : `Its measure, worked out from the others and rounded to ${ROUND_NAMES[clean.round]}.`)
+  const measureNote = (k: Part) => (clean[k].trim() ? 'Its measure, as you typed it.' : `Its measure, worked out from the others and rounded to ${ROUND_NAMES[clean.round]}.`)
   const NO_LENGTHS = 'No side has a length, so the triangle has a shape but no size. Give a side to show lengths.'
   const ROUND_NAMES = ['whole numbers', 'tenths', 'hundredths']
 
   const fieldProblem = $derived(MEASURES.map((k) => read.problems[k]).find(Boolean) ?? null)
 
-  function moveLabel(part, offset) {
+  function moveLabel(part: string, offset: Offset) {
     const moved = readMoved(settings.moved)
     moved[part] = offset
     settings.moved = writeMoved(moved)
   }
 
-  function applyPreset(preset) {
+  function applyPreset(preset: Settings) {
     pickedOther = false
     settings = cleanSettings($state.snapshot(preset))
   }
@@ -96,13 +98,13 @@
   // "Other…" stays picked while its box is still empty.
   let pickedOther = $state(false)
   const otherUnit = $derived(pickedOther || !UNITS.includes(clean.unit))
-  function chooseUnit(event) {
+  function chooseUnit(event: Event & { currentTarget: HTMLSelectElement }) {
     const v = event.currentTarget.value
     pickedOther = v === 'other'
     settings.unit = pickedOther ? '' : v
   }
 
-  const heightsSummary = $derived(ANGLES.filter((v) => clean[`h${v}`]).map((v) => `from ${name(v)}`).join(' · ') || 'None')
+  const heightsSummary = $derived(ANGLES.filter((v) => clean[`h${v}` as const]).map((v) => `from ${name(v)}`).join(' · ') || 'None')
   const labelsSummary = $derived(
     [
       clean.unit.trim() || 'no unit',
@@ -115,11 +117,11 @@
     [`${sideName(clean.base)} at the bottom`, clean.flip ? 'flipped' : '', clean.rotate ? `turned ${clean.rotate}°` : ''].filter(Boolean).join(' · '),
   )
 
-  let svg = $state()
+  let svg = $state<SVGSVGElement>()
   const filename = 'triangle'
 </script>
 
-{#snippet lineIcon(style)}
+{#snippet lineIcon(style: LineStyle)}
   <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true">
     <line
       x1="3" y1="6" x2="25" y2="6" stroke="currentColor" stroke-width="2.5"
@@ -150,7 +152,7 @@
         <h3 class="sub">Angles</h3>
         {#each ANGLES as v}
           <div class="row">
-            <input class="vname" type="text" maxlength="4" aria-label="Name of corner {v}" placeholder={v} bind:value={settings[`name${v}`]} />
+            <input class="vname" type="text" maxlength="4" aria-label="Name of corner {v}" placeholder={v} bind:value={settings[`name${v}` as const]} />
             <span class="sym" aria-hidden="true">∠</span>
             <MathInput
               id="m-{v}" aria-label="Angle {name(v)} in degrees" placeholder={clean[v].trim() ? '' : solvedText(v)}
@@ -159,7 +161,7 @@
             <span class="suffix" aria-hidden="true">°</span>
             <PartLabel
               name={partName(v)} id="l-{v}" given={!!clean[v].trim()} measure={measureText(v)} note={measureNote(v)} markKind="arcs"
-              bind:mode={settings[`${v}Label`]} bind:text={settings[`${v}Text`]} bind:marks={settings[`${v}Arcs`]}
+              bind:mode={settings[`${v}Label` as const]} bind:text={settings[`${v}Text` as const]} bind:marks={settings[`${v}Arcs` as const]}
             />
           </div>
         {/each}
@@ -175,7 +177,7 @@
             <span class="suffix unit" aria-hidden="true">{clean.unit.trim()}</span>
             <PartLabel
               name={partName(s)} id="l-{s}" given={!!clean[s].trim()} measure={measureText(s)} note={measureNote(s)} unavailable={NO_LENGTHS}
-              markKind="ticks" bind:mode={settings[`${s}Label`]} bind:text={settings[`${s}Text`]} bind:marks={settings[`${s}Ticks`]}
+              markKind="ticks" bind:mode={settings[`${s}Label` as const]} bind:text={settings[`${s}Text` as const]} bind:marks={settings[`${s}Ticks` as const]}
             />
           </div>
         {/each}
@@ -193,7 +195,7 @@
       <section class="card sections">
         <Section title="Heights" icon={MoveDown} summary={heightsSummary}>
           {#each ANGLES as v}
-            {@const h = `h${v}`}
+            {@const h = `h${v}` as const}
             <div class="height">
               <label class="check">
                 <input type="checkbox" bind:checked={settings[h]} />
@@ -202,12 +204,12 @@
               {#if clean[h]}
                 {@const right = ANGLES.find((u) => u !== v && Math.abs((good.triangle.angles[u] ?? 0) - 90) < 1e-6)}
                 <div class="height-opts">
-                  {#if right}<p class="hint note">This height is side {sideName(`${v}${right}`)}, since ∠{name(right)} is 90°, so there's no extra line to draw.</p>{/if}
+                  {#if right}<p class="hint note">This height is side {sideName(`${v}${right}` as Side)}, since ∠{name(right)} is 90°, so there's no extra line to draw.</p>{/if}
                   <div class="field">
                     <span id="{h}-line">Line</span>
                     <div class="segmented" role="radiogroup" aria-labelledby="{h}-line">
-                      {#each Object.entries(LINE_STYLES) as [value, title]}
-                        <button type="button" role="radio" aria-checked={clean[`${h}Style`] === value} aria-label={title} title={title} class:on={clean[`${h}Style`] === value} onclick={() => (settings[`${h}Style`] = value)}>
+                      {#each (Object.entries(LINE_STYLES) as [LineStyle, string][]) as [value, title]}
+                        <button type="button" role="radio" aria-checked={clean[`${h}Style` as const] === value} aria-label={title} title={title} class:on={clean[`${h}Style` as const] === value} onclick={() => (settings[`${h}Style` as const] = value)}>
                           {@render lineIcon(value)}
                         </button>
                       {/each}
@@ -216,19 +218,19 @@
                   <div class="field">
                     <span id="{h}-label">Label</span>
                     <div class="segmented" role="radiogroup" aria-labelledby="{h}-label">
-                      {#each [['measure', 'Measure'], ['text', 'Text'], ['none', 'None']] as [value, title]}
-                        <button type="button" role="radio" aria-checked={clean[`${h}Label`] === value} class:on={clean[`${h}Label`] === value} onclick={() => (settings[`${h}Label`] = value)}>{title}</button>
+                      {#each ([['measure', 'Measure'], ['text', 'Text'], ['none', 'None']] as const) as [value, title]}
+                        <button type="button" role="radio" aria-checked={clean[`${h}Label` as const] === value} class:on={clean[`${h}Label` as const] === value} onclick={() => (settings[`${h}Label` as const] = value)}>{title}</button>
                       {/each}
                     </div>
-                    {#if clean[`${h}Label`] === 'text'}
-                      <MathInput id="{h}-text" aria-label="Label for the height from {name(v)}" placeholder="h" bind:value={settings[`${h}Text`]} />
-                    {:else if clean[`${h}Label`] === 'measure' && read.triangle && !read.triangle.sized}
+                    {#if clean[`${h}Label` as const] === 'text'}
+                      <MathInput id="{h}-text" aria-label="Label for the height from {name(v)}" placeholder="h" bind:value={settings[`${h}Text` as const]} />
+                    {:else if clean[`${h}Label` as const] === 'measure' && read.triangle && !read.triangle.sized}
                       <p class="hint">{NO_LENGTHS}</p>
                     {/if}
                   </div>
                   <label class="field">
                     <span>Name where it lands <span class="hint">optional</span></span>
-                    <input type="text" maxlength="4" placeholder="D" bind:value={settings[`${h}Foot`]} />
+                    <input type="text" maxlength="4" placeholder="D" bind:value={settings[`${h}Foot` as const]} />
                   </label>
                 </div>
               {/if}

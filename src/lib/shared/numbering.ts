@@ -4,8 +4,17 @@
 // The numbering follows how the teacher typed the range: write π and the
 // numbers are in π, write a fraction and they are fractions.
 
+/** How numbers are written: decimals, fractions, or multiples of π. */
+export type Numbering = 'decimal' | 'fraction' | 'pi'
+
+/**
+ * A number ready to draw. Either { text } on one line, or a stacked fraction
+ * { sign, num, den }, where sign is '' or '−'.
+ */
+export type Label = { text: string; sign?: undefined; num?: undefined; den?: undefined } | { text?: undefined; sign: string; num: string; den: string }
+
 /** The numbering for a range typed as these texts ("0", "2pi", "pi/4"). */
-export function numberingOf(...texts) {
+export function numberingOf(...texts: string[]): Numbering {
   const typed = texts.join(' ')
   if (/pi|π/i.test(typed)) return 'pi'
   if (typed.includes('/')) return 'fraction'
@@ -15,13 +24,13 @@ export function numberingOf(...texts) {
 const MAX_DENOMINATOR = 100
 
 /** A number, free of float noise, with a true minus sign. */
-export function fmt(v) {
+export function fmt(v: number): string {
   const n = Number(v.toFixed(10))
   return (Object.is(n, -0) ? 0 : n).toString().replace('-', '−')
 }
 
 /** v as p/q in lowest terms with a small q, or null. */
-function ratio(v) {
+function ratio(v: number): { p: number; q: number } | null {
   for (let q = 1; q <= MAX_DENOMINATOR; q++) {
     const p = Math.round(v * q)
     if (Math.abs(p / q - v) < 1e-9) return { p, q }
@@ -29,11 +38,8 @@ function ratio(v) {
   return null
 }
 
-/**
- * A tick number ready to draw. Either { text } on one line, or a stacked
- * fraction { sign, num, den }, where sign is '' or '−'.
- */
-export function numberLabel(v, numbering) {
+/** A tick number ready to draw. */
+export function numberLabel(v: number, numbering: Numbering): Label {
   if (numbering === 'fraction') {
     const r = ratio(v)
     if (r && r.q !== 1) return { sign: r.p < 0 ? '−' : '', num: String(Math.abs(r.p)), den: String(r.q) }
@@ -54,19 +60,19 @@ export function numberLabel(v, numbering) {
  * on a line in decimals: the numbering's own form if it is short, else π, then a
  * fraction, then a decimal rounded to hundredths.
  */
-export function niceLabel(v, numbering) {
-  const short = (l) => !l.text || !/\.\d{4}/.test(l.text)
-  for (const n of [numbering, 'pi', 'fraction']) {
+export function niceLabel(v: number, numbering: Numbering): Label {
+  const short = (l: Label) => !l.text || !/\.\d{4}/.test(l.text)
+  for (const n of [numbering, 'pi', 'fraction'] as const) {
     const l = numberLabel(v, n)
-    if (short(l) && (n === numbering || l.den || l.text.includes('π'))) return l
+    if (short(l) && (n === numbering || l.den || l.text!.includes('π'))) return l
   }
   return { text: fmt(Math.round(v * 100) / 100) }
 }
 
-const oneLine = (l) => l.text ?? `${l.sign}${l.num}/${l.den}`
+const oneLine = (l: Label) => l.text ?? `${l.sign}${l.num}/${l.den}`
 
 /** The same label on one line, for summaries and messages: "−3/2", "3π/4". */
-export const numberText = (v, numbering) => oneLine(numberLabel(v, numbering))
+export const numberText = (v: number, numbering: Numbering) => oneLine(numberLabel(v, numbering))
 
 /** niceLabel on one line. */
-export const niceText = (v, numbering) => oneLine(niceLabel(v, numbering))
+export const niceText = (v: number, numbering: Numbering) => oneLine(niceLabel(v, numbering))

@@ -1,16 +1,18 @@
-<script>
+<script lang="ts">
   // The card every generator shows its figure in: an icon toolbar for getting
   // the figure out (copy, download, link) and undo/redo, above the figure
   // itself. `svg` is the rendered figure to export; `history` comes from
   // createHistory. Status messages appear as a toast over the figure.
   import { Copy, FileDown, ImageDown, Redo2, Share, Undo2 } from '@lucide/svelte'
+  import type { Snippet } from 'svelte'
   import { copyPng, downloadPng, downloadSvg } from './exporting.js'
+  import type { History } from './history.svelte.js'
 
-  let { svg, filename, history, children } = $props()
+  let { svg, filename, history, children }: { svg: SVGSVGElement | undefined; filename: string; history: History; children: Snippet } = $props()
 
   let status = $state('')
-  let statusTimer
-  function flash(msg) {
+  let statusTimer: ReturnType<typeof setTimeout> | undefined
+  function flash(msg: string) {
     status = msg
     clearTimeout(statusTimer)
     statusTimer = setTimeout(() => (status = ''), 2200)
@@ -18,7 +20,7 @@
 
   async function copyImage() {
     try {
-      await copyPng(svg)
+      await copyPng(svg!)
       flash('Image copied. Paste it into your document.')
     } catch {
       flash('Your browser blocked copying. Try downloading a PNG instead.')
@@ -39,8 +41,8 @@
 <div class="card canvas">
   <div class="toolbar" role="toolbar" aria-label="Figure actions">
     <button class="icon-btn" aria-label="Copy image" data-tip="Copy image" onclick={copyImage}><Copy size={19} /></button>
-    <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg, `${filename}.png`)}><ImageDown size={19} /></button>
-    <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg, `${filename}.svg`)}><FileDown size={19} /></button>
+    <button class="icon-btn" aria-label="Download PNG" data-tip="Download PNG" onclick={() => downloadPng(svg!, `${filename}.png`)}><ImageDown size={19} /></button>
+    <button class="icon-btn" aria-label="Download SVG" data-tip="Download SVG" onclick={() => downloadSvg(svg!, `${filename}.svg`)}><FileDown size={19} /></button>
     <button class="icon-btn" aria-label="Share link" data-tip="Share link" onclick={shareLink}><Share size={19} /></button>
     <span class="divider"></span>
     <button class="icon-btn" aria-label="Undo" data-tip="Undo" disabled={!history.canUndo} onclick={history.undo}><Undo2 size={19} /></button>

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // Shown for a missing page or an error, with a way back to the directory.
   import { page } from '$app/state'
   import { SITE_NAME } from '$lib/site/config.js'

@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { cleanSettings, readAxes, settingsFromParams, settingsToQuery, DEFAULT_SETTINGS } from './settings.js'
 
-const params = (q) => settingsFromParams(new URLSearchParams(q))
+const params = (q: string) => settingsFromParams(new URLSearchParams(q))
 
 describe('older links and presets', () => {
   test('a start and a number of blocks become From and To', () => {
     const s = params('xStart=-2&xBlocks=7&yStart=-1&yBlocks=14&yStep=0.5')
     expect([s.xFrom, s.xTo, s.xStep]).toEqual(['-2', '5', '1'])
     expect([s.yFrom, s.yTo, s.yStep]).toEqual(['-1', '6', '0.5'])
-    expect(s.xBlocks).toBeUndefined()
+    expect((s as Record<string, unknown>).xBlocks).toBeUndefined()
   })
 
   test('only blocks, or only a start, use the old defaults for the rest', () => {

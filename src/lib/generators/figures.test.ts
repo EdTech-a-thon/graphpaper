@@ -10,7 +10,7 @@ import * as line from './number-line/settings.js'
 import { buildTriangle } from './triangle/layout.js'
 import * as triangle from './triangle/settings.js'
 
-const eq = (...rows) => rows.map((r) => `eq=${encodeURIComponent(r)}`).join('&')
+const eq = (...rows: string[]) => rows.map((r) => `eq=${encodeURIComponent(r)}`).join('&')
 
 const GRID = [
   '',
@@ -63,7 +63,7 @@ const TRIANGLE = [
   'A=20',
 ]
 
-const params = (q) => new URLSearchParams(q)
+const params = (q: string) => new URLSearchParams(q)
 
 describe('coordinate grid', () => {
   test.each(GRID)('%s', (q) => {

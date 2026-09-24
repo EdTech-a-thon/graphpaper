@@ -5,20 +5,25 @@
 import CoordinateGridPreview from './coordinate-grid/Preview.svelte'
 import NumberLinePreview from './number-line/Preview.svelte'
 import TrianglePreview from './triangle/Preview.svelte'
+import type { Component } from 'svelte'
 
-/**
- * @typedef {object} Generator
- * @property {string} id
- * @property {string} name        page title, e.g. "Coordinate Grid Generator"
- * @property {string} path        its address on the site
- * @property {string} blurb       one line for the directory card
- * @property {string} description the page's search engine description
- * @property {string[]} keywords  words teachers might search for instead of the name
- * @property {any} Preview        component drawing a sample figure
- */
+export type Generator = {
+  id: string
+  /** page title, e.g. "Coordinate Grid Generator" */
+  name: string
+  /** its address on the site */
+  path: string
+  /** one line for the directory card */
+  blurb: string
+  /** the page's search engine description */
+  description: string
+  /** words teachers might search for instead of the name */
+  keywords: string[]
+  /** component drawing a sample figure */
+  Preview: Component
+}
 
-/** @type {Generator[]} */
-export const GENERATORS = [
+export const GENERATORS: Generator[] = [
   {
     id: 'coordinate-grid',
     name: 'Coordinate Grid Generator',
@@ -67,13 +72,13 @@ export const GENERATORS = [
   },
 ]
 
-export const findGenerator = (path) => GENERATORS.find((g) => g.path === path)
+export const findGenerator = (path: string) => GENERATORS.find((g) => g.path === path)
 
-const words = (text) => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+const words = (text: string) => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
 
 /** Generators matching a search. Every word typed must start some word in the
  *  generator's name, blurb or keywords, so "quad" finds the Coordinate Grid. */
-export function searchGenerators(query) {
+export function searchGenerators(query: string): Generator[] {
   const wanted = words(query)
   if (!wanted.length) return GENERATORS
   return GENERATORS.filter((g) => {

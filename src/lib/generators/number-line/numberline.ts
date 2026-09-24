@@ -2,8 +2,8 @@
 // line is always LINE units long, whatever its range, so every figure pastes
 // into a worksheet at the same width; the SVG scales to fit wherever it's shown.
 
-import { niceLabel, numberLabel } from '$lib/shared/numbering.js'
-import { readLine } from './settings.js'
+import { niceLabel, numberLabel, type Label } from '$lib/shared/numbering.js'
+import { readLine, type Settings } from './settings.js'
 
 export const LINE = 600
 const FS = 16 // number font size
@@ -19,12 +19,20 @@ const R = 6.5 // endpoint circle radius
 const CHAR = FS * 0.6 // rough width of one digit
 const EPS = 1e-9
 
-const labelWidth = (l) => (l.text ?? (l.num.length > l.den.length ? l.num : l.den) + l.sign).length * CHAR
+const labelWidth = (l: Label) => (l.text ?? (l.num!.length > l.den!.length ? l.num : l.den) + l.sign!).length * CHAR
 
-export function buildLine(s) {
+/** A number line laid out for NumberLine.svelte to draw. */
+export type LineLayout = ReturnType<typeof buildLine>
+
+/** A number on the line: on one line of text, or a stacked fraction. */
+type LineNumber =
+  | { x: number; text: string; y: number; sign?: undefined; num?: undefined; den?: undefined }
+  | { x: number; sign: string; num: string; den: string; numY: number; barY: number; denY: number; text?: undefined; y?: undefined }
+
+export function buildLine(s: Settings) {
   const { range, numbering, endpointNumbering, set, points, problems } = readLine(s)
   const { from, to, step } = range
-  const x = (v) => L + ((v - from) / (to - from)) * LINE
+  const x = (v: number) => L + ((v - from) / (to - from)) * LINE
 
   // Ticks, numbering every nth one counting from the tick at 0 when there is
   // one, so "every 5" gives 0, 5, 10…
@@ -32,7 +40,7 @@ export function buildLine(s) {
   const zero = -from / step
   const z = Math.round(zero)
   const ref = Math.abs(zero - z) < EPS && z >= 0 && z <= count ? z : 0
-  const ticks = []
+  const ticks: { v: number; major: boolean; label: Label | null }[] = []
   for (let i = 0; i <= count; i++) {
     const v = from + i * step
     const numbered = !!s.every && (i - ref) % s.every === 0
@@ -41,7 +49,7 @@ export function buildLine(s) {
 
   // Every row's graph, clipped to the line.
   const graph = set
-  const endpoints = new Map() // value -> closed; an endpoint shared by two parts is drawn once
+  const endpoints = new Map<number, boolean>() // value -> closed; an endpoint shared by two parts is drawn once
   for (const { lo, hi } of graph) {
     for (const b of [lo, hi]) {
       if (Number.isFinite(b.v) && b.v >= from - EPS && b.v <= to + EPS) endpoints.set(b.v, endpoints.get(b.v) || b.closed)
@@ -54,10 +62,10 @@ export function buildLine(s) {
   // An endpoint without a number under it gets one above it, clear of the tick
   // numbers, so the figure is never ambiguous. It's written the way the
   // equations were typed, so x < π/2 is labeled π/2.
-  const onNumber = (v) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
+  const onNumber = (v: number) => ticks.some((t) => t.label && Math.abs(t.v - v) < EPS * Math.max(1, Math.abs(v)))
   const extraLabels = [...new Set([...endpoints.keys(), ...crosses])].filter((v) => !onNumber(v)).map((v) => ({ v, label: niceLabel(v, endpointNumbering) }))
 
-  const labels = ticks.filter((t) => t.label)
+  const labels = ticks.filter((t): t is { v: number; major: boolean; label: Label } => !!t.label)
   const stacked = labels.some((l) => l.label.den)
   const extraStacked = extraLabels.some((l) => l.label.den)
   const aboveH = extraLabels.length ? (extraStacked ? FS * 2.3 : FS) + 8 : 0
@@ -82,21 +90,21 @@ export function buildLine(s) {
 
   const ends = { left: L - extL, right: L + LINE + extR }
   const tips = { left: ends.left + RAY_GAP, right: ends.right - RAY_GAP }
-  const segments = []
+  const segments: { x1: number; x2: number }[] = []
   for (const { lo, hi } of parts) {
     const x1 = lo.v < from - EPS ? tips.left + RAY_HEAD - 1 : x(lo.v)
     const x2 = hi.v > to + EPS ? tips.right - RAY_HEAD + 1 : x(hi.v)
     if (x2 > x1) segments.push({ x1, x2 })
   }
-  const arrow = (tip, dir) => `M${tip},${axisY} L${tip - dir * RAY_HEAD},${axisY - RAY_HALF} L${tip - dir * RAY_HEAD},${axisY + RAY_HALF} z`
-  const arrows = [rayL && arrow(tips.left, -1), rayR && arrow(tips.right, 1)].filter(Boolean)
+  const arrow = (tip: number, dir: number) => `M${tip},${axisY} L${tip - dir * RAY_HEAD},${axisY - RAY_HALF} L${tip - dir * RAY_HEAD},${axisY + RAY_HALF} z`
+  const arrows = [rayL && arrow(tips.left, -1), rayR && arrow(tips.right, 1)].filter((a): a is string => !!a)
 
   // Numbers sit in a row starting at `top`; a row with any stacked fraction is taller.
-  const row = (list, top, tall) =>
-    list.map(({ v, label }) =>
+  const row = (list: { v: number; label: Label }[], top: number, tall: boolean) =>
+    list.map(({ v, label }): LineNumber =>
       label.den
         ? { x: x(v), sign: label.sign, num: label.num, den: label.den, numY: top + FS * 0.85, barY: top + FS * 1.1, denY: top + FS * 2.05 }
-        : { x: x(v), text: label.text, y: tall ? top + FS * 1.45 : top + FS * 0.85 },
+        : { x: x(v), text: label.text!, y: tall ? top + FS * 1.45 : top + FS * 0.85 },
     )
   const numbers = [
     ...row(labels, axisY + TICK + 6, stacked),

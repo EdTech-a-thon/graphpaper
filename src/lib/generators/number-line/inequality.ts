@@ -3,6 +3,7 @@
 // points like "3" or "−1, 2.5" become that set too (one closed dot each), and a
 // range value like "3π/2" becomes a number. Runs on the server too.
 
+import type { TreeNode } from '@caret-js/core'
 import { CommaListNode, ComparisonNode, KeywordNode, LogicNode, ParenthesesChildTag, VariableNode, evaluate } from '@caret-js/math'
 import { fromText, parsers } from '$lib/shared/math.js'
 
@@ -11,18 +12,19 @@ export { parseNumber } from '$lib/shared/math.js'
 /**
  * An interval runs from `lo` to `hi`. Each end is { v, closed }, where v can be
  * ±Infinity (never closed). A single number is an interval with lo.v === hi.v.
- * @typedef {{ lo: { v: number, closed: boolean }, hi: { v: number, closed: boolean } }} Interval
  */
+export type Interval = { lo: End; hi: End }
+export type End = { v: number; closed: boolean }
 
 const EPS = 1e-9
-const same = (a, b) => Math.abs(a - b) < EPS * Math.max(1, Math.abs(a), Math.abs(b))
-const ALL = [{ lo: { v: -Infinity, closed: false }, hi: { v: Infinity, closed: false } }]
+const same = (a: number, b: number) => Math.abs(a - b) < EPS * Math.max(1, Math.abs(a), Math.abs(b))
+const ALL: Interval[] = [{ lo: { v: -Infinity, closed: false }, hi: { v: Infinity, closed: false } }]
 
-const isEmpty = ({ lo, hi }) => lo.v > hi.v || (same(lo.v, hi.v) && !(lo.closed && hi.closed))
+const isEmpty = ({ lo, hi }: Interval) => lo.v > hi.v || (same(lo.v, hi.v) && !(lo.closed && hi.closed))
 
 /** Numbers in both sets. */
-export function intersect(a, b) {
-  const out = []
+export function intersect(a: Interval[], b: Interval[]): Interval[] {
+  const out: Interval[] = []
   for (const p of a) {
     for (const q of b) {
       const lo = same(p.lo.v, q.lo.v) ? { v: p.lo.v, closed: p.lo.closed && q.lo.closed } : p.lo.v > q.lo.v ? p.lo : q.lo
@@ -34,24 +36,24 @@ export function intersect(a, b) {
 }
 
 /** Numbers in either set, as few intervals as possible, left to right. */
-export function union(a, b) {
+export function union(a: Interval[], b: Interval[]): Interval[] {
   const sorted = [...a, ...b].filter((i) => !isEmpty(i)).sort((p, q) => p.lo.v - q.lo.v || (q.lo.closed ? 1 : -1))
-  const out = []
+  const out: Interval[] = []
   for (const i of sorted) {
     const last = out.at(-1)
     const touches = last && (i.lo.v < last.hi.v || (same(i.lo.v, last.hi.v) && (i.lo.closed || last.hi.closed)))
     if (!touches) out.push({ lo: { ...i.lo }, hi: { ...i.hi } })
-    else if (same(i.hi.v, last.hi.v)) last.hi.closed ||= i.hi.closed
-    else if (i.hi.v > last.hi.v) last.hi = { ...i.hi }
+    else if (same(i.hi.v, last!.hi.v)) last!.hi.closed ||= i.hi.closed
+    else if (i.hi.v > last!.hi.v) last!.hi = { ...i.hi }
   }
   return out
 }
 
 /** The numbers where `variable <op> value` is true. */
-function solve(op, value) {
-  const at = (closed) => ({ v: value, closed })
-  const below = (closed) => [{ lo: { v: -Infinity, closed: false }, hi: at(closed) }]
-  const above = (closed) => [{ lo: at(closed), hi: { v: Infinity, closed: false } }]
+function solve(op: Comparator, value: number): Interval[] {
+  const at = (closed: boolean): End => ({ v: value, closed })
+  const below = (closed: boolean): Interval[] => [{ lo: { v: -Infinity, closed: false }, hi: at(closed) }]
+  const above = (closed: boolean): Interval[] => [{ lo: at(closed), hi: { v: Infinity, closed: false } }]
   switch (op) {
     case '<': return below(false)
     case '≤': return below(true)
@@ -61,11 +63,12 @@ function solve(op, value) {
     case '≠': return union(below(false), above(false))
   }
 }
-const FLIP = { '<': '>', '>': '<', '≤': '≥', '≥': '≤', '=': '=', '≠': '≠' }
+type Comparator = ComparisonNode['operators'][number]
+const FLIP: Record<Comparator, Comparator> = { '<': '>', '>': '<', '≤': '≥', '≥': '≤', '=': '=', '≠': '≠' }
 
 class ReadError extends Error {}
 
-function setOf(node, vars) {
+function setOf(node: TreeNode, vars: Set<string>): Interval[] {
   if (node instanceof KeywordNode) {
     if (node.word === 'all real numbers') return ALL
     if (node.word === 'no solution') return []
@@ -80,11 +83,11 @@ function setOf(node, vars) {
     for (let k = 0; k < node.operators.length; k++) {
       const [left, right] = [node.operands[k], node.operands[k + 1]]
       const op = node.operators[k]
-      let pair
+      let pair: Interval[]
       if (left instanceof VariableNode && !(right instanceof VariableNode)) pair = solve(op, number(right))
       else if (right instanceof VariableNode && !(left instanceof VariableNode)) pair = solve(FLIP[op], number(left))
       else throw new ReadError('Put the letter on one side and a number on the other, like x < 3.')
-      vars.add((left instanceof VariableNode ? left : right).name)
+      vars.add((left instanceof VariableNode ? left : (right as VariableNode)).name)
       set = intersect(set, pair)
     }
     return set
@@ -92,29 +95,28 @@ function setOf(node, vars) {
   throw new ReadError('Try an equation like −2 < x ≤ 5 or x < −1 or x ≥ 3, or points like 3 or −1, 2.5.')
 }
 
-function number(node) {
+function number(node: TreeNode): number {
   const v = evaluate(node)
   if (v === null || !Number.isFinite(v)) throw new ReadError('Each side of an equation needs a number, like x < 3 or x ≥ 3π/2.')
   return v
 }
 
 /** Points typed as numbers, like 3 or −1, 2.5, π/2, as their values; null when it isn't a list of numbers. */
-function pointsOf(text) {
+function pointsOf(text: string): number[] | null {
   const node = parsers.equation.parse(fromText(text))
   if (node instanceof CommaListNode && node.hasTag(ParenthesesChildTag)) {
     throw new ReadError('A point on a number line is one number, like 3 or −1/2. For more than one: 3, −1, 5/2.')
   }
   const values = (node instanceof CommaListNode ? node.expressions : [node]).map((n) => evaluate(n))
-  return values.every((v) => v !== null && Number.isFinite(v)) ? values : null
+  return values.every((v) => v !== null && Number.isFinite(v)) ? (values as number[]) : null
 }
 
 /**
  * Read an inequality, or points. Blank text is a blank number line (set: null).
- * @returns {{ set: Interval[] | null, variable: string | null, points: boolean, error: string | null }}
  */
-export function parseInequality(text) {
+export function parseInequality(text: string): { set: Interval[] | null; variable: string | null; points: boolean; error: string | null } {
   if (!String(text ?? '').trim()) return { set: null, variable: null, points: false, error: null }
-  const vars = new Set()
+  const vars = new Set<string>()
   try {
     const points = pointsOf(text)
     if (points) return { set: union(points.map((v) => ({ lo: { v, closed: true }, hi: { v, closed: true } })), []), variable: null, points: true, error: null }

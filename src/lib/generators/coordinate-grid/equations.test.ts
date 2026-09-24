@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { ROW_DEFAULTS, clipLine, curveRuns, parseEquation, readEquations, rowFromParam } from './equations.js'
 import { DEFAULT_SETTINGS, cleanSettings, settingsFromParams, settingsToQuery } from './settings.js'
 
-const line = (text) => {
-  const { a, b, c } = parseEquation(text).line
+const line = (text: string) => {
+  const { a, b, c } = parseEquation(text)!.line!
   // Scale so y's coefficient is −1 (or x's is 1 for a vertical line), to compare easily.
   const k = Math.abs(b) > 1e-12 ? -b : a
   return [a / k, b / k, c / k].map((v) => Math.round(v * 1e9) / 1e9 + 0)
@@ -27,7 +27,7 @@ describe('parseEquation', () => {
     ['(1, 2), (3, -4)', [{ x: 1, y: 2 }, { x: 3, y: -4 }]],
     ['(-1/2, pi)', [{ x: -0.5, y: Math.PI }]],
   ])('%s is points', (text, expected) => {
-    expect(parseEquation(text).points).toEqual(expected)
+    expect(parseEquation(text)!.points).toEqual(expected)
   })
 
   test.each([
@@ -44,7 +44,7 @@ describe('parseEquation', () => {
     ['y =', 'Try a line'],
     ['hello', 'Try a line'],
   ])('%s explains: %s', (text, start) => {
-    expect(parseEquation(text).error).toContain(start)
+    expect(parseEquation(text)!.error).toContain(start)
   })
 
   test('blank is nothing', () => expect(parseEquation('  ')).toBeNull())
@@ -59,8 +59,8 @@ describe('parseEquation', () => {
     ['y = 1/2x^2', [[2, 2]]],
     ['y = x^3 - x', [[2, 6]]],
   ])('%s is a curve', (text, points) => {
-    const { curve } = parseEquation(text)
-    for (const [x, y] of points) expect(curve(x)).toBeCloseTo(y, 9)
+    const { curve } = parseEquation(text)!
+    for (const [x, y] of points) expect(curve!(x)).toBeCloseTo(y, 9)
   })
 })
 
@@ -68,49 +68,49 @@ const box = { x0: -5, x1: 5, y0: -5, y1: 5 }
 
 describe('clipLine', () => {
   test('a line across the grid ends on its edges', () => {
-    const [p, q] = clipLine(parseEquation('y = 2x + 1').line, box)
+    const [p, q] = clipLine(parseEquation('y = 2x + 1')!.line!, box)!
     expect([p, q].map(({ x, y }) => [x, y].map((v) => Math.round(v * 1e9) / 1e9)).sort((m, n) => m[0] - n[0])).toEqual([
       [-3, -5],
       [2, 5],
     ])
   })
   test('a vertical line', () => {
-    const ends = clipLine(parseEquation('x = 4').line, box)
+    const ends = clipLine(parseEquation('x = 4')!.line!, box)!
     expect(ends.map((e) => e.x)).toEqual([4, 4])
   })
   test('a line off the grid', () => {
-    expect(clipLine(parseEquation('y = 9').line, box)).toBeNull()
+    expect(clipLine(parseEquation('y = 9')!.line!, box)).toBeNull()
   })
 })
 
 describe('curveRuns', () => {
   test('a parabola comes in and goes out the top, with arrows at both ends', () => {
-    const runs = curveRuns(parseEquation('y = x^2 - 4').curve, box)
+    const runs = curveRuns(parseEquation('y = x^2 - 4')!.curve!, box)
     expect(runs).toHaveLength(1)
     const [run] = runs
     expect(run.edges).toEqual([true, true])
     expect(run.points[0].y).toBeCloseTo(5, 9)
-    expect(run.points.at(-1).y).toBeCloseTo(5, 9)
+    expect(run.points.at(-1)!.y).toBeCloseTo(5, 9)
     expect(run.points[0].x).toBeCloseTo(-3, 3)
-    expect(run.points.at(-1).x).toBeCloseTo(3, 3)
+    expect(run.points.at(-1)!.x).toBeCloseTo(3, 3)
   })
   test('a curve that stops inside the grid has no arrow there', () => {
-    const [run] = curveRuns(parseEquation('y = x^(1/2)').curve, box)
+    const [run] = curveRuns(parseEquation('y = x^(1/2)')!.curve!, box)
     expect(run.edges).toEqual([false, true])
   })
   test('a curve that leaves and comes back is two runs', () => {
-    expect(curveRuns(parseEquation('y = x^3 - 9x').curve, { x0: -4, x1: 4, y0: -5, y1: 5 }).length).toBeGreaterThan(1)
+    expect(curveRuns(parseEquation('y = x^3 - 9x')!.curve!, { x0: -4, x1: 4, y0: -5, y1: 5 }).length).toBeGreaterThan(1)
   })
 })
 
 describe('readEquations', () => {
   test('a curve off the grid says so', () => {
-    expect(readEquations(['y = x^2 + 20'], box)[0].problem).toMatch(/misses the grid/)
+    expect(readEquations(['y = x^2 + 20'], box)[0]!.problem).toMatch(/misses the grid/)
   })
   test('points off the grid are left out and named', () => {
     const [row] = readEquations(['(1, 1), (9, 2)'], box)
-    expect(row.points).toEqual([{ x: 1, y: 1 }])
-    expect(row.problem).toMatch(/^\(9, 2\) is off the grid/)
+    expect(row!.points).toEqual([{ x: 1, y: 1 }])
+    expect(row!.problem).toMatch(/^\(9, 2\) is off the grid/)
   })
 })
 

@@ -1,10 +1,11 @@
-<script>
+<script lang="ts">
   // The button after a measure, showing what's written at that part of the
   // triangle. It opens a small popup to choose the label (its measure, typed
   // text, or nothing) and congruence marks. Fixed-position like RowStyle's
   // popup, so the scrolling settings column can't clip it.
   import { tick } from 'svelte'
   import MathInput from '$lib/shared/MathInput.svelte'
+  import type { LabelMode } from './settings.js'
 
   // mode: auto | measure | text | none, where auto shows the measure only when
   // it's given. measure: how the measure reads (null when it can't be shown,
@@ -13,6 +14,9 @@
   let {
     name, id, given, measure, note = '', unavailable = '', markKind = 'ticks',
     mode = $bindable(), text = $bindable(), marks = $bindable(),
+  }: {
+    name: string; id: string; given: boolean; measure: string | null; note?: string; unavailable?: string; markKind?: 'ticks' | 'arcs'
+    mode: LabelMode; text: string; marks?: number
   } = $props()
 
   const shown = $derived(mode === 'auto' ? (given ? 'measure' : 'none') : mode)
@@ -20,16 +24,16 @@
     shown === 'measure' ? measure : shown === 'text' ? pretty(text) : '',
   )
   /** Stored math, the way it reads: sqrt(2) as √2, pi as π. */
-  function pretty(t) {
+  function pretty(t: string | undefined) {
     return String(t ?? '').replace(/sqrt\(([^()]*)\)/g, '√$1').replace(/pi/g, 'π').replace(/-/g, '−')
   }
 
-  const MODES = [['measure', 'Measure'], ['text', 'Text'], ['none', 'None']]
+  const MODES = [['measure', 'Measure'], ['text', 'Text'], ['none', 'None']] as const
 
   let open = $state(false)
-  let root = $state()
-  let trigger = $state()
-  let panel = $state()
+  let root = $state<HTMLElement>()
+  let trigger = $state<HTMLButtonElement>()
+  let panel = $state<HTMLElement>()
   let pos = $state({ left: 0, top: 0 })
   const GAP = 6
   const EDGE = 8
@@ -38,12 +42,12 @@
     open = true
     await tick()
     place()
-    panel.querySelector('[aria-checked=true]')?.focus()
+    panel!.querySelector<HTMLElement>('[aria-checked=true]')?.focus()
   }
   function place() {
-    const r = trigger.getBoundingClientRect()
-    const h = panel.offsetHeight
-    const w = panel.offsetWidth
+    const r = trigger!.getBoundingClientRect()
+    const h = panel!.offsetHeight
+    const w = panel!.offsetWidth
     const below = r.bottom + GAP + h <= window.innerHeight - EDGE
     pos = {
       top: Math.max(EDGE, below ? r.bottom + GAP : r.top - GAP - h),
@@ -54,16 +58,16 @@
     open = false
     if (refocus) trigger?.focus()
   }
-  function onpointerdown(event) {
-    if (open && !root.contains(event.target)) hide(false)
+  function onpointerdown(event: PointerEvent) {
+    if (open && !root!.contains(event.target as Node)) hide(false)
   }
-  function onkeydown(event) {
+  function onkeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       event.preventDefault()
       hide()
     }
   }
-  async function choose(value) {
+  async function choose(value: LabelMode) {
     mode = value
     await tick()
     if (open) place()
@@ -71,9 +75,9 @@
   }
 </script>
 
-<svelte:window {onpointerdown} onresize={() => open && hide(false)} onscrollcapture={(e) => open && !panel?.contains(e.target) && hide(false)} />
+<svelte:window {onpointerdown} onresize={() => open && hide(false)} onscrollcapture={(e) => open && !panel?.contains(e.target as Node) && hide(false)} />
 
-{#snippet markIcon(n)}
+{#snippet markIcon(n: number)}
   <svg viewBox="0 0 28 16" width="28" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
     {#if markKind === 'ticks'}
       <line x1="2" y1="8" x2="26" y2="8" stroke-width="1.4" />

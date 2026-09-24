@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // Every page: the top bar, the page, then the footer (generators go without,
   // so the figure gets the whole window), plus the Help and request dialogs.
   import '../app.css'

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   // The Number Line Generator: presets, the equations and the line's settings
   // on the left, the figure card on the right. Settings are mirrored into the page
   // address so a bookmark or shared link brings back exactly this number line,
@@ -15,10 +15,10 @@
   import { niceText } from '$lib/shared/numbering.js'
   import NumberLine from './NumberLine.svelte'
   import { presetStore } from './presets.js'
-  import { cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery } from './settings.js'
+  import { cleanSettings, readLine, sameFigure, settingsFromParams, settingsToQuery, type Settings } from './settings.js'
 
   // There's always a row to type the next equation in.
-  const withRow = (s) => (s.equations.length ? s : { ...s, equations: [''] })
+  const withRow = (s: Settings): Settings => (s.equations.length ? s : { ...s, equations: [''] })
 
   let settings = $state(withRow(settingsFromParams(page.url.searchParams)))
   const clean = $derived(cleanSettings(settings))
@@ -31,7 +31,7 @@
     const i = settings.equations.length - 1
     requestAnimationFrame(() => document.getElementById(`eq-${i}`)?.focus())
   }
-  function removeRow(i) {
+  function removeRow(i: number) {
     settings.equations.splice(i, 1)
     if (!settings.equations.length) settings.equations.push('')
   }
@@ -53,7 +53,7 @@
     storageKey: 'mathfigures.number-line.history',
   })
 
-  const EVERY_OPTIONS = [
+  const EVERY_OPTIONS: [number, string][] = [
     [1, 'Every tick'],
     [2, 'Every 2nd tick'],
     [4, 'Every 4th tick'],
@@ -65,11 +65,11 @@
     ['from', 'From'],
     ['to', 'To'],
     ['step', 'Count by'],
-  ]
+  ] as const
 
   const lineSummary = $derived.by(() => {
     const { from, to, step } = line.range
-    const n = (v) => niceText(v, line.numbering)
+    const n = (v: number) => niceText(v, line.numbering)
     return [
       `${n(from)} to ${n(to)}`,
       `by ${n(step)}`,
@@ -78,11 +78,11 @@
     ].filter(Boolean).join(' · ')
   })
 
-  function applyPreset(preset) {
+  function applyPreset(preset: Settings) {
     settings = withRow(cleanSettings($state.snapshot(preset)))
   }
 
-  let svg = $state()
+  let svg = $state<SVGSVGElement>()
   const filename = 'number-line'
 </script>
 
